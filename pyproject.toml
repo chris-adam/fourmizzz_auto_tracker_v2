@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "fourmizzz-auto-tracker-v2"
+version = "0.1.0"
+description = ""
+authors = ["Chris Adam"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+Django = "^4.2.6"
+selenium = "^4.14.0"
+requests = "^2.31.0"
+bs4 = "^0.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
