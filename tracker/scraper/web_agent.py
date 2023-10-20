@@ -1,7 +1,5 @@
 from selenium import webdriver
-from selenium.common.exceptions import StaleElementReferenceException, TimeoutException, NoSuchElementException, \
-    ElementNotInteractableException, ElementClickInterceptedException
-from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
@@ -81,21 +79,6 @@ def get_alliance_members(server: str, alliance: str, cookie_session: str) -> Lis
     member_list = list(row.find_all("td")[2].text for row in rows)
 
     return member_list
-
-
-def get_player_hunting_field_and_trophies(server: str, player_name: str, cookie_session: str) -> Tuple[int, int]:
-    cookies = {'PHPSESSID': cookie_session}
-    url = f"http://{server}.fourmizzz.fr/Membre.php?Pseudo={player_name}"
-
-    try:
-        r = requests.get(url, cookies=cookies)
-    except requests.exceptions.ConnectionError:
-        raise requests.exceptions.ConnectionError(f"Could not open player profile: {player_name}")
-    soup = BeautifulSoup(r.text, "html.parser")
-    hunting_field = int(soup.find("table", {"class": "tableau_score"}).find_all("tr")[1].find_all("td")[1].text.replace(" ", ""))
-    trophies = int(soup.find("table", {"class": "tableau_score"}).find_all("tr")[4].find_all("td")[1].text.replace(" ", ""))
-
-    return hunting_field, trophies
 
 
 def get_player_alliance(server: str, player_name: str, cookie_session: str) -> str:

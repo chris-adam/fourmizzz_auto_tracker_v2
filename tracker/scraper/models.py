@@ -10,7 +10,7 @@ class FourmizzzCredentials(models.Model):
     server = models.fields.CharField(max_length=100, choices=[("s1", "s1"), ("s2", "s2"), ("s3", "s3"), ("s4", "s4")], unique=True)
     username = models.fields.CharField(max_length=100)
     password = models.fields.CharField(max_length=100)
-    cookie_session = models.fields.CharField(max_length=100, help_text=f"Grab the cookie value from PHPSESSID ({format_html("<a target='_blank' rel='noopener' href='https://developer.chrome.com/docs/devtools/application/cookies/'>Click here</a>")})")
+    cookie_session = models.fields.CharField(max_length=100, help_text=f"""Grab the value from cookie PHPSESSID ({format_html("<a target='_blank' rel='noopener' href='https://developer.chrome.com/docs/devtools/application/cookies/'>Click here</a>")})""")
 
     def __str__(self):
         return f'{self.username} ({self.server})'
@@ -67,6 +67,10 @@ class PrecisionSnapshot(models.Model):
     hunting_field = models.fields.IntegerField(editable=False)
     trophies = models.fields.IntegerField(editable=False)
     player = models.ForeignKey(PlayerTarget, on_delete=models.CASCADE, editable=False)
+
+
+# TODO Create queue model to store all pending changes in precisionsnapshots
+# Or find a better way to handle this queue
 
 
 # def DiscordBot(models.Model):

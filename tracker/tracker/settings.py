@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_celery_results',
     'scraper',
 ]
 
@@ -117,6 +118,10 @@ USE_I18N = True
 
 USE_TZ = True
 
+USE_L10N = False
+
+DATETIME_FORMAT = 'd/m/Y H:i:s.u'
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
@@ -157,3 +162,11 @@ LOGGING = {
         },
     },
 }
+
+
+# TODO use env variables hgere
+CELERY_BROKER_URL = 'amqp://user:password@localhost:5672/vhost'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'
+CELERY_TIMEZONE = 'Europe/Brussels'
+CELERY_TASK_TIME_LIMIT = 60

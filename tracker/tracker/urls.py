@@ -17,6 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+admin.site.site_header = 'Fourmizzz auto-tracker v2'
+admin.site.site_title = 'Fourmizzz auto-tracker v2'
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 ]

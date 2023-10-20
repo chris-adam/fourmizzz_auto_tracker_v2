@@ -11,5 +11,14 @@ services:
     env_file:
       - postgres.env
 
+  rabbitmq:
+    image: rabbitmq:3.12
+    container_name: rabbitmq
+    ports:
+      - 127.0.0.1:5672:5672
+    env_file:
+      - rabbitmq.env
+
+
 volumes:
   timescaledb_data:
