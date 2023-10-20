@@ -9,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from time import sleep
+from typing import List, Tuple
 
 
 def wait_for_elem(driver, elem, by, timeout=5, max_retries=5):
@@ -67,3 +68,42 @@ def validate_fourmizzz_cookie_session(server: str, cookie_session: str) -> bool:
     menu = soup.find(id="centre")
     text = menu.find("p").text
     return "Session expirée, Merci de vous reconnecterRetour" not in text
+
+
+def get_alliance_members(server: str, alliance: str, cookie_session: str) -> List[str]:
+    url = f"http://{server}.fourmizzz.fr/classementAlliance.php?alliance={alliance}"
+    cookies = {'PHPSESSID': cookie_session}
+
+    r = requests.get(url, cookies=cookies)
+    soup = BeautifulSoup(r.text, "html.parser")
+    table = soup.find(id="tabMembresAlliance")
+    rows = table.find_all("tr")[1:]
+    member_list = list(row.find_all("td")[2].text for row in rows)
+
+    return member_list
+
+
+def get_player_hunting_field_and_trophies(server: str, player_name: str, cookie_session: str) -> Tuple[int, int]:
+    cookies = {'PHPSESSID': cookie_session}
+    url = f"http://{server}.fourmizzz.fr/Membre.php?Pseudo={player_name}"
+
+    try:
+        r = requests.get(url, cookies=cookies)
+    except requests.exceptions.ConnectionError:
+        raise requests.exceptions.ConnectionError(f"Could not open player profile: {player_name}")
+    soup = BeautifulSoup(r.text, "html.parser")
+    hunting_field = int(soup.find("table", {"class": "tableau_score"}).find_all("tr")[1].find_all("td")[1].text.replace(" ", ""))
+    trophies = int(soup.find("table", {"class": "tableau_score"}).find_all("tr")[4].find_all("td")[1].text.replace(" ", ""))
+
+    return hunting_field, trophies
+
+
+def get_player_alliance(server: str, player_name: str, cookie_session: str) -> str:
+    """
+    Returns the alliance in which the player is
+    """
+    cookies = {'PHPSESSID': cookie_session}
+    url = f"http://{server}.fourmizzz.fr/Membre.php?Pseudo={player_name}"
+    r = requests.get(url, cookies=cookies)
+    soup = BeautifulSoup(r.text, "html.parser")
+    return soup.find("div", {"class": "boite_membre"}).find("table").find("tr").find_all("td")[1].find("a").text

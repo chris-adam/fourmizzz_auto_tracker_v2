@@ -11,6 +11,9 @@ Django = "^4.2.6"
 selenium = "^4.14.0"
 requests = "^2.31.0"
 bs4 = "^0.0.1"
+engineering-notation = "^0.10.0"
+psycopg = {extras = ["c"], version = "^3.1.12"}
+psycopg-binary = "^3.1.12"
 
 
 [build-system]
