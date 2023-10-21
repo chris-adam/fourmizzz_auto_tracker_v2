@@ -1,0 +1,83 @@
+version: '3'
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: timescaledb
+    expose:
+      - 5432
+    volumes:
+      - timescaledb_data:/home/postgres/pgdata/data
+    env_file:
+      - postgres.env
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3.12
+    container_name: rabbitmq
+    expose:
+      - 5672
+    env_file:
+      - rabbitmq.env
+    restart: always
+  
+  django:
+    container_name: django
+    build:
+      dockerfile: docker/Dockerfile
+      target: django
+    expose:
+      - 8000
+    env_file:
+      - postgres.env
+      - rabbitmq.env
+      - django.env
+    depends_on:
+      - timescaledb
+    restart: always
+
+  celery:
+    container_name: celery
+    build:
+      dockerfile: docker/Dockerfile
+      target: django
+    env_file:
+      - postgres.env
+      - rabbitmq.env
+      - django.env
+    depends_on:
+      - rabbitmq
+      - timescaledb
+    command:
+      - python
+      - -m
+      - celery
+      - -A
+      - tracker
+      - worker
+      - --loglevel=INFO
+      - --beat
+    restart: always
+
+  nginx:
+    container_name: nginx
+    build:
+      dockerfile: docker/Dockerfile
+      target: nginx
+      network: host
+      args:
+        - CERTBOT_EMAIL=adam.chris@live.be
+        - DOMAIN_LIST=tracker.swarm-empire.com
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - django
+    restart: always
+    volumes:
+      - ./nginx/config/conf.d:/etc/nginx/conf.d
+      - letsencrypt:/etc/letsencrypt
+
+
+volumes:
+  timescaledb_data:

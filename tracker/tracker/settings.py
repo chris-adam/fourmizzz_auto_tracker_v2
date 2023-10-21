@@ -21,12 +21,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-2_+y@sgnu%23vb+3rzr*e+!8(fuvxsu&y9di0(p=i0%kq3t)qu'
+SECRET_KEY = os.environ.get("SECRET_KEY", 'django-insecure-2_+y@sgnu%23vb+3rzr*e+!8(fuvxsu&y9di0(p=i0%kq3t)qu')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = eval(os.environ.get("DEBUG", "True"))
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [os.environ.get("HOST", "localhost")]
 
 
 # Application definition
@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django_celery_results',
     'django_celery_beat',
     'scraper',
+    'discord_bot',
 ]
 
 MIDDLEWARE = [
@@ -122,13 +123,14 @@ USE_TZ = True
 
 USE_L10N = False
 
-DATETIME_FORMAT = 'd/m/Y H:i:s.u'
+DATETIME_FORMAT = 'd/m/Y H:i:s'
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(os.path.dirname(BASE_DIR), "static")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -166,10 +168,12 @@ LOGGING = {
 }
 
 
-# TODO use env variables here
-CELERY_BROKER_URL = 'amqp://user:password@localhost:5672/vhost'
+RABBITMQ_DEFAULT_USER=os.environ.get('RABBITMQ_DEFAULT_USER', 'user')
+RABBITMQ_DEFAULT_PASS=os.environ.get('RABBITMQ_DEFAULT_PASS', 'password')
+RABBITMQ_DEFAULT_HOST=os.environ.get('RABBITMQ_DEFAULT_HOST', 'localhost')
+RABBITMQ_DEFAULT_VHOST=os.environ.get('RABBITMQ_DEFAULT_VHOST', 'vhost')
+CELERY_BROKER_URL = f'amqp://{RABBITMQ_DEFAULT_USER}:{RABBITMQ_DEFAULT_PASS}@{RABBITMQ_DEFAULT_HOST}:5672/{RABBITMQ_DEFAULT_VHOST}'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
-CELERY_TIMEZONE = 'Europe/Brussels'
+CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TIME_LIMIT = 30
-CELERY_TASK_PUBLISH_RETRY = False

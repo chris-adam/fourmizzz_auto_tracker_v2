@@ -24,7 +24,7 @@ app.conf.beat_schedule = {
         # 'name': 'Take snapshots of targets every minute',
         'options': {
             'countdown': 10,
-            'expires': 45,
+            'expires': 30,
         },
     },
 }

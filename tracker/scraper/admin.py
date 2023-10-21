@@ -2,6 +2,14 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django_admin_listfilter_dropdown.filters import DropdownFilter, ChoiceDropdownFilter
 from engineering_notation import EngNumber
+from django_celery_results.admin import TaskResult, GroupResult
+from django_celery_beat.models import (
+    IntervalSchedule,
+    CrontabSchedule,
+    SolarSchedule,
+    ClockedSchedule,
+    PeriodicTask,
+)
 
 from scraper.models import FourmizzzCredentials, PlayerTarget, AllianceTarget, PrecisionSnapshot, RankingSnapshot
 from scraper.forms import FourmizzzCredentialsForm, PlayerTargetForm, AllianceTargetForm
@@ -43,10 +51,16 @@ class PlayerTargetAdmin(admin.ModelAdmin):
     show_alliance.short_description = "Alliance"
 
     def hunting_field(self, obj):
-        return EngNumber(PrecisionSnapshot.objects.filter(player=obj).last().hunting_field)
+        last_snapshot = PrecisionSnapshot.objects.filter(player=obj).last()
+        if not last_snapshot:
+            return None
+        return EngNumber(last_snapshot.hunting_field)
 
     def trophies(self, obj):
-        return PrecisionSnapshot.objects.filter(player=obj).last().trophies
+        last_snapshot = PrecisionSnapshot.objects.filter(player=obj).last()
+        if not last_snapshot:
+            return None
+        return last_snapshot.trophies
 
 
 @admin.register(AllianceTarget)
@@ -66,7 +80,7 @@ class AllianceTargetAdmin(admin.ModelAdmin):
 
 @admin.register(PrecisionSnapshot)
 class PrecisionSnapshotAdmin(admin.ModelAdmin):
-    list_display = ('time', 'player', 'hunting_field', 'trophies', 'hunting_field_diff', 'trophies_diff', 'processed')
+    list_display = ('pk', 'time', 'player', 'hunting_field', 'trophies', 'hunting_field_diff', 'trophies_diff', 'processed')
     list_filter = ('processed', )
     def has_add_permission(self, request):
         return False
@@ -93,3 +107,14 @@ class RankingSnapshotAdmin(admin.ModelAdmin):
         return False
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+# Disable Celery results admin
+admin.site.unregister(TaskResult)
+admin.site.unregister(GroupResult)
+# Disable Celery beat admin
+admin.site.unregister(SolarSchedule)
+admin.site.unregister(ClockedSchedule)
+admin.site.unregister(PeriodicTask)
+admin.site.unregister(IntervalSchedule)
+admin.site.unregister(CrontabSchedule)
