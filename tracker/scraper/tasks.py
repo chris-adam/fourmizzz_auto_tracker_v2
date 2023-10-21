@@ -18,7 +18,7 @@ from discord_bot.bot import send_message
 
 @app.task
 def take_player_precision_snapshot(server: str, player_name: str) -> Tuple[int, int]:
-    credentials = FourmizzzCredentials.objects.filter(server="s1").first()
+    credentials = FourmizzzCredentials.objects.filter(server=server).first()
     if not credentials:
         raise ValueError(f"No Fourmizzz credentials for sever {server}")
 
@@ -51,7 +51,7 @@ def take_player_precision_snapshot(server: str, player_name: str) -> Tuple[int, 
 
 @app.task
 def take_page_ranking_snapshot(server: str, page: int) -> None:
-    credentials = FourmizzzCredentials.objects.filter(server="s1").first()
+    credentials = FourmizzzCredentials.objects.filter(server=server).first()
     if not credentials:
         raise ValueError(f"No Fourmizzz credentials for sever {server}")
 
@@ -93,7 +93,7 @@ def process_player_precision_snapshots(unprocessed_player_snapshot_pk: List[int]
     def format_move(server, player_name, snapshot):
         credentials = FourmizzzCredentials.objects.filter(server=server).first()
         alliance_name = get_player_alliance(server, player_name, credentials.cookie_session)
-        alliance = '-' if alliance_name is None else f"[{alliance_name}](http://s1.fourmizzz.fr/classementAlliance.php?alliance={alliance_name})"
+        alliance = '-' if alliance_name is None else f"[{alliance_name}](http://{server}.fourmizzz.fr/classementAlliance.php?alliance={alliance_name})"
         hunting_field_before = '{:,}'.format(snapshot.hunting_field-snapshot.hunting_field_diff).replace(",", " ")
         hunting_field_after = '{:,}'.format(snapshot.hunting_field).replace(",", " ")
         hunting_field_diff = '{:+,}'.format(snapshot.hunting_field_diff).replace(",", " ")

@@ -33,12 +33,12 @@ class PlayerTargetAdmin(admin.ModelAdmin):
         return ['server', 'name'] if obj else []
 
     def show_name(self, obj):
-        return format_html("<a target='_blank' rel='noopener' href='http://s1.fourmizzz.fr/Membre.php?Pseudo={name}'>{name}</a>", name=obj.name)
+        return format_html("<a target='_blank' rel='noopener' href='http://{obj.server}.fourmizzz.fr/Membre.php?Pseudo={name}'>{name}</a>", name=obj.name)
     show_name.short_description = "Name"
 
     def show_alliance(self, obj):
         if obj.alliance:
-            return format_html("<a target='_blank' rel='noopener' href='http://s1.fourmizzz.fr/classementAlliance.php?alliance={alliance}'>{alliance}</a>", alliance=obj.alliance.name)
+            return format_html("<a target='_blank' rel='noopener' href='http://{obj.server}.fourmizzz.fr/classementAlliance.php?alliance={alliance}'>{alliance}</a>", alliance=obj.alliance.name)
 
         credentials = FourmizzzCredentials.objects.filter(server=obj.server).first()
         if not credentials:
@@ -47,7 +47,7 @@ class PlayerTargetAdmin(admin.ModelAdmin):
         player_alliance = get_player_alliance(obj.server, obj.name, credentials.cookie_session)
         if not player_alliance:
             return
-        return format_html("<a target='_blank' rel='noopener' href='http://s1.fourmizzz.fr/classementAlliance.php?alliance={alliance}'>{alliance}</a>", alliance=player_alliance)
+        return format_html("<a target='_blank' rel='noopener' href='http://{obj.server}.fourmizzz.fr/classementAlliance.php?alliance={alliance}'>{alliance}</a>", alliance=player_alliance)
     show_alliance.short_description = "Alliance"
 
     def hunting_field(self, obj):
@@ -74,7 +74,7 @@ class AllianceTargetAdmin(admin.ModelAdmin):
         return ['server', 'name'] if obj else []
 
     def show_name(self, obj):
-        return format_html("<a target='_blank' rel='noopener' href='http://s1.fourmizzz.fr/classementAlliance.php?alliance={name}'>{name}</a>", name=obj.name)
+        return format_html("<a target='_blank' rel='noopener' href='http://{obj.server}.fourmizzz.fr/classementAlliance.php?alliance={name}'>{name}</a>", name=obj.name)
     show_name.short_description = "Alliance"
 
 
@@ -94,7 +94,7 @@ class RankingSnapshotAdmin(admin.ModelAdmin):
     list_filter = (('server', ChoiceDropdownFilter), ('player', DropdownFilter))
 
     def show_player(self, obj):
-        return format_html("<a target='_blank' rel='noopener' href='http://s1.fourmizzz.fr/Membre.php?Pseudo={player}'>{player}</a>", player=obj.player)
+        return format_html("<a target='_blank' rel='noopener' href='http://{obj.server}.fourmizzz.fr/Membre.php?Pseudo={player}'>{player}</a>", player=obj.player)
     show_player.short_description = "Player"
 
     def show_hunting_field(self, obj):

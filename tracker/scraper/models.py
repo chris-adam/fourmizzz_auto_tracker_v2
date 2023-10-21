@@ -23,7 +23,7 @@ class AllianceTarget(models.Model):
     def save(self, *args, **kwargs):
         super(AllianceTarget, self).save(*args, **kwargs)
 
-        cookie_session = FourmizzzCredentials.objects.filter(server="s1").first().cookie_session
+        cookie_session = FourmizzzCredentials.objects.filter(server=self.server).first().cookie_session
         player_names = get_alliance_members(self.server, self.name, cookie_session)
 
         player_targets = []
