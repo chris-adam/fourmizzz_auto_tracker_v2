@@ -63,7 +63,7 @@ HEALTHCHECK CMD curl -f http://localhost/admin/ || exit 1
 CMD /opt/django/entrypoint.sh
 
 
-FROM nginx:stable-alpine AS nginx
+FROM nginx:stable AS nginx
 
 ARG CERTBOT_EMAIL
 ARG DOMAIN_LIST
