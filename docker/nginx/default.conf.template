@@ -1,5 +1,28 @@
 server {
-   listen 80 default_server;
+   listen 80;
+
+   server_name tracker.swarm-empire.com;
+
+   location /.well-known/acme-challenge/ {
+      root /var/www/certbot;
+   }
+
+   return 301 https://$host$request_uri;
+}
+
+server {
+   listen 443 ssl default_server;
+   server_name tracker.swarm-empire.com;
+
+   ssl_certificate        /etc/letsencrypt/live/tracker.swarm-empire.com/fullchain.pem;
+   ssl_certificate_key    /etc/letsencrypt/live/tracker.swarm-empire.com/privkey.pem;
+
+   ssl_protocols   TLSv1 TLSv1.1 TLSv1.2;
+   ssl_ciphers     HIGH:!aNULL:!MD5;
+
+   include /etc/letsencrypt/options-ssl-nginx.conf;
+   ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
    rewrite_log on;
    error_log stderr notice;
    root /opt/nginx/static/;
