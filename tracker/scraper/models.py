@@ -3,8 +3,6 @@ from django.utils.html import format_html
 
 from scraper.web_agent import get_alliance_members
 
-from django.utils.timezone import now
-
 
 class FourmizzzCredentials(models.Model):
     server = models.fields.CharField(max_length=100, choices=[("s1", "s1"), ("s2", "s2"), ("s3", "s3"), ("s4", "s4")], unique=True)
@@ -55,6 +53,8 @@ class PlayerTarget(models.Model):
         editable=False,  # Make PlayerTargets not editable by the user
     )
 
+    # TODO take precision snapshot as soon as the player target is created
+
     class Meta:
         unique_together = ('server', 'name')
 
@@ -63,14 +63,23 @@ class PlayerTarget(models.Model):
 
 
 class PrecisionSnapshot(models.Model):
-    time = models.fields.DateTimeField(auto_now_add=True, db_index=True, primary_key=True)
-    hunting_field = models.fields.IntegerField(editable=False)
-    trophies = models.fields.IntegerField(editable=False)
+    time = models.fields.DateTimeField(auto_now_add=True)
     player = models.ForeignKey(PlayerTarget, on_delete=models.CASCADE, editable=False)
+    hunting_field = models.fields.PositiveBigIntegerField(editable=False)
+    trophies = models.fields.IntegerField(editable=False)
+    hunting_field_diff = models.fields.BigIntegerField(editable=False, default=0)
+    trophies_diff = models.fields.IntegerField(editable=False, default=0)
+    processed = models.fields.BooleanField(default=False)
 
 
-# TODO Create queue model to store all pending changes in precisionsnapshots
-# Or find a better way to handle this queue
+class RankingSnapshot(models.Model):
+    time = models.fields.DateTimeField(auto_now_add=True)
+    server = models.fields.CharField(max_length=100, choices=[("s1", "s1"), ("s2", "s2"), ("s3", "s3"), ("s4", "s4")], editable=False)
+    player = models.fields.CharField(max_length=100, editable=False)
+    hunting_field = models.fields.PositiveBigIntegerField(editable=False)
+    trophies = models.fields.IntegerField(editable=False)
+    hunting_field_diff = models.fields.BigIntegerField(editable=False, default=0)
+    trophies_diff = models.fields.IntegerField(editable=False, default=0)
 
 
 # def DiscordBot(models.Model):

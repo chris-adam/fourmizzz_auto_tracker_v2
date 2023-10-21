@@ -19,7 +19,7 @@ docker compose up -d
 
 Run Celery
 ```bash
-poetry run celery -A tracker worker --loglevel=INFO
+poetry run celery -A tracker worker --loglevel=INFO -B
 ```
 
 Run Django

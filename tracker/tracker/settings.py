@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_admin_listfilter_dropdown',
     'django_celery_results',
+    'django_celery_beat',
     'scraper',
 ]
 
@@ -112,7 +114,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Brussels'
 
 USE_I18N = True
 
@@ -164,9 +166,10 @@ LOGGING = {
 }
 
 
-# TODO use env variables hgere
+# TODO use env variables here
 CELERY_BROKER_URL = 'amqp://user:password@localhost:5672/vhost'
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
 CELERY_TIMEZONE = 'Europe/Brussels'
-CELERY_TASK_TIME_LIMIT = 60
+CELERY_TASK_TIME_LIMIT = 30
+CELERY_TASK_PUBLISH_RETRY = False

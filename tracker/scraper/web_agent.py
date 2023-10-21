@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 
 from time import sleep
-from typing import List, Tuple
+from typing import List, Union, NoReturn
 
 
 def wait_for_elem(driver, elem, by, timeout=5, max_retries=5):
@@ -81,7 +81,7 @@ def get_alliance_members(server: str, alliance: str, cookie_session: str) -> Lis
     return member_list
 
 
-def get_player_alliance(server: str, player_name: str, cookie_session: str) -> str:
+def get_player_alliance(server: str, player_name: str, cookie_session: str) -> Union[str, NoReturn]:
     """
     Returns the alliance in which the player is
     """
@@ -89,4 +89,7 @@ def get_player_alliance(server: str, player_name: str, cookie_session: str) -> s
     url = f"http://{server}.fourmizzz.fr/Membre.php?Pseudo={player_name}"
     r = requests.get(url, cookies=cookies)
     soup = BeautifulSoup(r.text, "html.parser")
-    return soup.find("div", {"class": "boite_membre"}).find("table").find("tr").find_all("td")[1].find("a").text
+    try:
+        return soup.find("div", {"class": "boite_membre"}).find("table").find("tr").find_all("td")[1].find("a").text
+    except AttributeError:
+        return
