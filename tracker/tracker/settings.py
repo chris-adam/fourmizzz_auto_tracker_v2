@@ -26,8 +26,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY", 'django-insecure-2_+y@sgnu%23vb+3rzr*e
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = eval(os.environ.get("DEBUG", "True"))
 
-ALLOWED_HOSTS = [os.environ.get("HOST", "localhost")]
-
+if os.environ.get("HOST"):
+    ALLOWED_HOSTS = [os.environ.get("HOST")]
+    CSRF_TRUSTED_ORIGINS = [f'https://{os.environ.get("HOST")}']
 
 # Application definition
 
