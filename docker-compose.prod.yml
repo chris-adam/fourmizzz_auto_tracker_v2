@@ -75,7 +75,6 @@ services:
       - django
     restart: always
     volumes:
-      - ./nginx/config/conf.d:/etc/nginx/conf.d
       - letsencrypt:/etc/letsencrypt
 
 

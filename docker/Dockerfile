@@ -59,7 +59,6 @@ COPY --chown=1000:1000 tracker ./
 RUN mkdir /opt/django/static \
     && python manage.py collectstatic --no-input
 
-HEALTHCHECK CMD curl -f http://localhost/admin/ || exit 1
 CMD /opt/django/entrypoint.sh
 
 
@@ -79,7 +78,7 @@ RUN  apt-get update \
 VOLUME /etc/letsencrypt
 
 RUN mkdir -p /opt/nginx
-COPY docker/nginx/ /etc/nginx/templates/
+COPY docker/nginx/ /etc/nginx/conf.d/
 COPY --from=django /opt/django/static /opt/nginx/static
 
 HEALTHCHECK CMD curl -f http://localhost/healthy || exit 1
