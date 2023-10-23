@@ -76,8 +76,18 @@ class AllianceTargetAdmin(admin.ModelAdmin):
 
 @admin.register(PrecisionSnapshot)
 class PrecisionSnapshotAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'time', 'player', 'hunting_field', 'trophies', 'hunting_field_diff', 'trophies_diff', 'processed')
+    list_display = ('pk', 'time', 'player', 'alliance', 'hunting_field', 'trophies', 'hunting_field_diff', 'trophies_diff', 'processed')
     list_filter = ('processed', )
+
+    def alliance(self, obj):
+        if obj.player.alliance:
+            return format_html("<a target='_blank' rel='noopener' href='http://{server}.fourmizzz.fr/classementAlliance.php?alliance={alliance}'>{alliance}</a>", server=obj.player.server.name, alliance=obj.player.alliance.name)
+
+        player_alliance = get_player_alliance(obj.player.server.name, obj.player.name, obj.player.server.cookie_session)
+        if player_alliance:
+            return format_html("<a target='_blank' rel='noopener' href='http://{server}.fourmizzz.fr/classementAlliance.php?alliance={alliance}'>{alliance}</a>", server=obj.player.server.name, alliance=player_alliance)
+    alliance.short_description = "Alliance"
+
     def has_add_permission(self, request):
         return False
     def has_change_permission(self, request, obj=None):
