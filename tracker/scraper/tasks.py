@@ -56,6 +56,7 @@ def take_page_ranking_snapshot(server_pk: int, page: int) -> None:
 
     soup = BeautifulSoup(r.text, "html.parser")
     table = soup.find("table", {"class": "tab_triable"})
+    ranking_snapshots = list()
     for row in table.find_all("tr")[1:]:
         _, player_name, hunting_field, _, _, trophies = row.find_all("td")
         player_name = player_name.find("a").text
@@ -64,14 +65,16 @@ def take_page_ranking_snapshot(server_pk: int, page: int) -> None:
 
         last_player_snapshot = RankingSnapshot.objects.filter(server=server, player_name=player_name).last()
         if last_player_snapshot is None:
-            RankingSnapshot(server=server, player_name=player_name, hunting_field=hunting_field, trophies=trophies).save()
+            ranking_snapshots.append(RankingSnapshot(server=server, player_name=player_name, hunting_field=hunting_field, trophies=trophies))
         elif last_player_snapshot.hunting_field != hunting_field or last_player_snapshot.trophies != trophies:
-            RankingSnapshot(server=server,
-                            player_name=player_name,
-                            hunting_field=hunting_field,
-                            hunting_field_diff=hunting_field-last_player_snapshot.hunting_field,
-                            trophies=trophies,
-                            trophies_diff=trophies-last_player_snapshot.trophies).save()
+            ranking_snapshots.append(RankingSnapshot(server=server,
+                                                     player_name=player_name,
+                                                     hunting_field=hunting_field,
+                                                     hunting_field_diff=hunting_field-last_player_snapshot.hunting_field,
+                                                     trophies=trophies,
+                                                     trophies_diff=trophies-last_player_snapshot.trophies))
+
+    RankingSnapshot.objects.bulk_create(ranking_snapshots)
 
 
 @app.task
