@@ -23,7 +23,7 @@ app.conf.beat_schedule = {
         'schedule': crontab(minute='*'),
         # 'name': 'Take snapshots of targets every minute',
         'options': {
-            'countdown': 10,
+            'countdown': 5,
             'expires': 30,
         },
     },

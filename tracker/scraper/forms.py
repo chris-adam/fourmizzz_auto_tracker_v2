@@ -1,20 +1,33 @@
 from django.forms import ModelForm, PasswordInput
 from django.core.exceptions import ValidationError
 
-from scraper.models import FourmizzzCredentials, AllianceTarget, PlayerTarget
+from scraper.models import FourmizzzServer, AllianceTarget, PlayerTarget
 from scraper.web_agent import validate_fourmizzz_cookie_session, player_exists, get_alliance_members
 
 
-class FourmizzzCredentialsForm(ModelForm):
+class FourmizzzServerForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(FourmizzzServerForm, self).__init__(*args, **kwargs)
+        instance = getattr(self, 'instance', None)
+        if instance and instance.pk:
+            self.fields['name'].widget.attrs['readonly'] = True
+
+    def clean_name(self):
+        instance = getattr(self, 'instance', None)
+        if instance and instance.pk:
+            return instance.name
+        else:
+            return self.cleaned_data['name']
+
     class Meta:
-        model = FourmizzzCredentials
-        fields = [f.name for f in FourmizzzCredentials._meta.get_fields()]
+        model = FourmizzzServer
+        fields = ('name', 'username', 'cookie_session')
         widgets = {'cookie_session': PasswordInput()}
 
     def clean(self):
-        cleaned_data = super(FourmizzzCredentialsForm, self).clean()
-        if not validate_fourmizzz_cookie_session(cleaned_data['server'], cleaned_data['cookie_session']):
-            raise ValidationError('Invalid cookie session')
+        cleaned_data = super(FourmizzzServerForm, self).clean()
+        if not validate_fourmizzz_cookie_session(cleaned_data['name'], cleaned_data['cookie_session']):
+            raise ValidationError('Invalid cookie session, try to refresh your Fourmizzz tab')
         return self.cleaned_data
 
 
@@ -25,10 +38,8 @@ class AllianceTargetForm(ModelForm):
 
     def clean(self):
         cleaned_data = super(AllianceTargetForm, self).clean()
-        credentials = FourmizzzCredentials.objects.filter(server=cleaned_data['server']).first()
-        if not credentials:
-            raise ValidationError(f'Missing credentials for server {cleaned_data["server"]}')
-        if not get_alliance_members(cleaned_data['server'], cleaned_data['name'], credentials.cookie_session):
+        cookie_session = cleaned_data['server'].cookie_session
+        if not get_alliance_members(cleaned_data['server'], cleaned_data['name'], cookie_session):
             raise ValidationError(f'Alliance {cleaned_data["name"]} not found in server {cleaned_data["server"]}')
         return self.cleaned_data
 
@@ -40,9 +51,7 @@ class PlayerTargetForm(ModelForm):
 
     def clean(self):
         cleaned_data = super(PlayerTargetForm, self).clean()
-        credentials = FourmizzzCredentials.objects.filter(server=cleaned_data['server']).first()
-        if not credentials:
-            raise ValidationError(f'Missing credentials for server {cleaned_data["server"]}')
-        if not player_exists(cleaned_data['server'], cleaned_data['name'], credentials.cookie_session):
+        cookie_session = cleaned_data['server'].cookie_session
+        if not player_exists(cleaned_data['server'], cleaned_data['name'], cookie_session):
             raise ValidationError(f'Player {cleaned_data["name"]} not found in server {cleaned_data["server"]}')
         return self.cleaned_data

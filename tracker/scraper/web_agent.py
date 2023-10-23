@@ -1,7 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
 
-from time import sleep
 from typing import List, Union, NoReturn
 
 
@@ -21,7 +20,10 @@ def validate_fourmizzz_cookie_session(server: str, cookie_session: str) -> bool:
     r = requests.get(url, cookies=cookies)
     soup = BeautifulSoup(r.text, "html.parser")
     menu = soup.find(id="centre")
-    text = menu.find("p").text
+    try:
+        text = menu.find("p").text
+    except AttributeError:
+        return True
     return "Session expirée, Merci de vous reconnecterRetour" not in text
 
 
@@ -40,7 +42,7 @@ def get_alliance_members(server: str, alliance: str, cookie_session: str) -> Lis
 
 def get_player_alliance(server: str, player_name: str, cookie_session: str) -> Union[str, NoReturn]:
     """
-    Returns the alliance in which the player is
+    Returns the alliance in which the player is, or None if the player has no alliance
     """
     cookies = {'PHPSESSID': cookie_session}
     url = f"http://{server}.fourmizzz.fr/Membre.php?Pseudo={player_name}"
