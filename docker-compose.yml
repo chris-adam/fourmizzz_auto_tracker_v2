@@ -2,7 +2,7 @@ version: '3'
 
 services:
   timescaledb:
-    image: timescale/timescaledb:latest-pg15
+    image: timescale/timescaledb-ha:pg15-latest
     container_name: timescaledb
     ports:
       - 127.0.0.1:5432:5432
