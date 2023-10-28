@@ -8,6 +8,7 @@ class FourmizzzServer(models.Model):
     name = models.fields.CharField(max_length=100, choices=[("s1", "s1"), ("s2", "s2"), ("s3", "s3"), ("s4", "s4")], unique=True)
     username = models.fields.CharField(max_length=100, help_text="This is not used. This is only for you to remeber what account you picked the cookie from.")
     cookie_session = models.fields.CharField(max_length=100, help_text=f"""Grab the value from cookie PHPSESSID ({format_html("<a target='_blank' rel='noopener' href='https://developer.chrome.com/docs/devtools/application/cookies/'>Click here</a>")})""")
+    n_scanned_pages = models.fields.IntegerField(verbose_name="Number of scanned pages", default=100)
 
     def __str__(self):
         return f'{self.name}'

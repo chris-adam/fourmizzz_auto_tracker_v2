@@ -61,7 +61,7 @@ def take_precision_snapshots() -> None:
 
 
 @app.task
-def take_page_ranking_snapshot(server_pk: int, page: int) -> None:
+def take_page_ranking_snapshot(server_pk: int, page: int) -> Tuple[int, int, int, int]:
     server = FourmizzzServer.objects.get(pk=server_pk)
     cookies = {'PHPSESSID': server.cookie_session}
     url = f"http://{server.name}.fourmizzz.fr/classement2.php?page={page}&typeClassement=terrain"
@@ -93,13 +93,49 @@ def take_page_ranking_snapshot(server_pk: int, page: int) -> None:
 
     RankingSnapshot.objects.bulk_create(ranking_snapshots)
 
+    return {"server_pk": server_pk, "page": page, "hunting_field": hunting_field, "trophies": trophies}
+
+
+@app.task
+def update_n_scanned_pages(ranking_snapshot_results: List[List]):
+    server_pk = ranking_snapshot_results[0]["server_pk"]
+    server = FourmizzzServer.objects.get(pk=server_pk)
+    lowest_current_hunting_field = min(PrecisionSnapshot.objects.filter(player__server=server).distinct("player").values_list("hunting_field", flat=True))
+
+    last_page = ranking_snapshot_results[-1]["page"]
+    penultimate_page = ranking_snapshot_results[-2]["page"]
+    current_lowest_hunting_field_from_ranking_page = ranking_snapshot_results[-1]["hunting_field"]
+
+    # We should increase the number of scanned ranking pages
+    if current_lowest_hunting_field_from_ranking_page > lowest_current_hunting_field//3:
+        return chain(group([take_page_ranking_snapshot.si(server_pk, i_page) for i_page in (last_page, 2*last_page)]), update_n_scanned_pages.s()).delay()
+    # We're already in the process of increasing the number of pages
+    elif last_page - penultimate_page != 1:
+        penultimate_current_lowest_hunting_field_from_ranking_page = ranking_snapshot_results[-2]["hunting_field"]
+        # The target page amount is in between our two limits
+        if penultimate_current_lowest_hunting_field_from_ranking_page > lowest_current_hunting_field//3:
+            return chain(group([take_page_ranking_snapshot.si(server_pk, i_page) for i_page in ((last_page+penultimate_page)//2, last_page)]), update_n_scanned_pages.s()).delay()
+        # We overshoot the limit and should lower our limits
+        else:
+            return chain(group([take_page_ranking_snapshot.si(server_pk, i_page) for i_page in (penultimate_page-(last_page-penultimate_page)//2, penultimate_page)]), update_n_scanned_pages.s()).delay()
+
+    # We should decrease the number of scanned ranking pages
+    for ranking_page_result in ranking_snapshot_results[::-1]:
+        lowest_hunting_field_from_ranking_page = ranking_page_result["hunting_field"]
+        if lowest_hunting_field_from_ranking_page < lowest_current_hunting_field//3:
+            last_page -= 1
+        else:
+            server.n_scanned_pages = last_page + 1
+            server.save()
+            return last_page + 1
+
 
 @app.task
 def take_ranking_snapshots() -> None:
     # Take both precision and ranking snapshots
     take_snapshot_subtasks = []
     for server in FourmizzzServer.objects.iterator():
-        take_snapshot_subtasks.extend([take_page_ranking_snapshot.si(server.pk, i_page) for i_page in range(1, 21)])
+        take_snapshot_subtasks.append(chain(group([take_page_ranking_snapshot.si(server.pk, i_page) for i_page in range(1, server.n_scanned_pages+1)]), update_n_scanned_pages.s()))
     return group(take_snapshot_subtasks).delay()
 
 
@@ -162,7 +198,7 @@ def process_player_precision_snapshots(unprocessed_player_snapshot_pk: List[int]
         ranking_snapshot = RankingSnapshot.objects.get(pk=ranking_snapshot_pk)
         notification_message += f"{format_move(ranking_snapshot.server, ranking_snapshot.player_name, ranking_snapshot)}\n"
 
-    send_message(f"Mouvement de Tdc {player_target.server}", notification_message)
+    send_message(f"Mouvement de Tdc {player_target.server}", notification_message, player_target.server)
     unprocessed_player_snapshots.update(processed=True)
 
     return unprocessed_player_snapshot_pk, matched_simultaneous_snapshots_pk
