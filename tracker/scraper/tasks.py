@@ -100,7 +100,7 @@ def take_page_ranking_snapshot(server_pk: int, page: int) -> Tuple[int, int, int
 def update_n_scanned_pages(ranking_snapshot_results: List[List]):
     server_pk = ranking_snapshot_results[0]["server_pk"]
     server = FourmizzzServer.objects.get(pk=server_pk)
-    lowest_current_hunting_field = min(PrecisionSnapshot.objects.filter(player__server=server).distinct("player").values_list("hunting_field", flat=True))
+    lowest_current_hunting_field = min(PrecisionSnapshot.objects.filter(player__server=server).order_by("player", "-time").distinct("player").values_list("hunting_field", flat=True))
 
     last_page = ranking_snapshot_results[-1]["page"]
     penultimate_page = ranking_snapshot_results[-2]["page"]
