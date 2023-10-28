@@ -20,7 +20,7 @@ from scraper.web_agent import get_player_alliance
 @admin.register(FourmizzzServer)
 class FourmizzzServerAdmin(admin.ModelAdmin):
     form = FourmizzzServerForm
-    list_display = ('name', 'username')
+    list_display = ('pk', 'name', 'username', 'n_scanned_pages')
 
 
 @admin.register(PlayerTarget)

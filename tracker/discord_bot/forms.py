@@ -10,13 +10,13 @@ from discord_bot.bot import send_message
 class DiscordWebhookForm(ModelForm):
     class Meta:
         model = DiscordWebhook
-        fields = ["name", "url"]
+        fields = ["server", "name", "url"]
         widgets = {'url': PasswordInput()}
 
     def clean(self):
         cleaned_data = super(DiscordWebhookForm, self).clean()
         try:
-            response = send_message("Webhook validation", "Validating webhook", "ffffff", [cleaned_data["url"]])[0]
+            response = send_message("Webhook validation", "Validating webhook", cleaned_data["server"], "ffffff", [cleaned_data["url"]])[0]
         except (MissingSchema, JSONDecodeError) as e:
             raise ValidationError(f"Invalid webhook URL: {e}")
         if response.status_code >= 400:
