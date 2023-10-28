@@ -120,14 +120,17 @@ def update_n_scanned_pages(ranking_snapshot_results: List[List]):
             return chain(group([take_page_ranking_snapshot.si(server_pk, i_page) for i_page in (penultimate_page-(last_page-penultimate_page)//2, penultimate_page)]), update_n_scanned_pages.s()).delay()
 
     # We should decrease the number of scanned ranking pages
+    new_page = last_page
     for ranking_page_result in ranking_snapshot_results[::-1]:
         lowest_hunting_field_from_ranking_page = ranking_page_result["hunting_field"]
         if lowest_hunting_field_from_ranking_page < lowest_current_hunting_field//3:
-            last_page -= 1
+            new_page -= 1
         else:
-            server.n_scanned_pages = last_page + 1
+            server.n_scanned_pages = new_page + 1
             server.save()
-            return last_page + 1
+            return new_page + 1
+
+    return last_page
 
 
 @app.task
