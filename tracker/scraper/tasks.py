@@ -14,6 +14,10 @@ from tracker.celery import app
 from scraper.models import FourmizzzServer, PlayerTarget, PrecisionSnapshot, RankingSnapshot
 from scraper.web_agent import get_player_alliance
 from discord_bot.bot import send_message
+from discord_bot.models import DiscordWebhook
+
+
+# --- Precision snapshots
 
 
 @app.task
@@ -41,6 +45,19 @@ def take_player_precision_snapshot(player_pk: int) -> Tuple[int, int]:
                           trophies=trophies,
                           trophies_diff=trophies-last_player_snapshot.trophies,
                           player=player).save()
+
+
+@app.task
+def take_precision_snapshots() -> None:
+    # Take both precision and ranking snapshots
+    take_snapshot_subtasks = []
+    for player_target in PlayerTarget.objects.iterator():
+        take_snapshot_subtasks.append(take_player_precision_snapshot.si(player_target.pk))
+
+    return group(take_snapshot_subtasks).delay()
+
+
+# --- Ranking snapshots
 
 
 @app.task
@@ -75,6 +92,18 @@ def take_page_ranking_snapshot(server_pk: int, page: int) -> None:
                                                      trophies_diff=trophies-last_player_snapshot.trophies))
 
     RankingSnapshot.objects.bulk_create(ranking_snapshots)
+
+
+@app.task
+def take_ranking_snapshots() -> None:
+    # Take both precision and ranking snapshots
+    take_snapshot_subtasks = []
+    for server in FourmizzzServer.objects.iterator():
+        take_snapshot_subtasks.extend([take_page_ranking_snapshot.si(server.pk, i_page) for i_page in range(1, 21)])
+    return group(take_snapshot_subtasks).delay()
+
+
+# --- Process snapshots
 
 
 @app.task
@@ -140,13 +169,9 @@ def process_player_precision_snapshots(unprocessed_player_snapshot_pk: List[int]
 
 
 @app.task
-def take_snapshot() -> None:
-    # Take both precision and ranking snapshots
-    take_snapshot_subtasks = []
-    for player_target in PlayerTarget.objects.iterator():
-        take_snapshot_subtasks.append(take_player_precision_snapshot.si(player_target.pk))
-    for server in FourmizzzServer.objects.iterator():
-        take_snapshot_subtasks.extend([take_page_ranking_snapshot.si(server.pk, i_page) for i_page in range(1, 101)])
+def process_snapshots() -> None:
+    if not DiscordWebhook.objects.all():
+        return
 
     # Process pending precison snapshots
     process_snapshot_subtasks = list()
@@ -156,4 +181,4 @@ def take_snapshot() -> None:
         unique_player_unprocessed_snapshots_pk = list(unprocessed_snapshots.filter(player=unique_player_target_pk).values_list("pk", flat=True))
         process_snapshot_subtasks.append(process_player_precision_snapshots.si(unique_player_unprocessed_snapshots_pk))
 
-    return chain(group(take_snapshot_subtasks), group(process_snapshot_subtasks)).delay()
+    return group(process_snapshot_subtasks).delay()

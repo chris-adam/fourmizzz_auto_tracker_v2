@@ -18,13 +18,33 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
-    'take-snapshots-of-targets-every-minute': {
-        'task': 'scraper.tasks.take_snapshot',
+    'take-precision-snapshots-of-targets-every-minute': {
+        'task': 'scraper.tasks.take_precision_snapshots',
+        'schedule': crontab(minute='*'),
+        # 'name': 'Take snapshots of targets every minute',
+        'options': {
+            'countdown': 4,
+            'expires': 45,
+            'priority': 9,  # highest priority
+        },
+    },
+    'take-ranking-snapshots-every-minute': {
+        'task': 'scraper.tasks.take_ranking_snapshots',
         'schedule': crontab(minute='*'),
         # 'name': 'Take snapshots of targets every minute',
         'options': {
             'countdown': 5,
-            'expires': 30,
+            'expires': 45,
+            'priority': 4,  # middle priority
+        },
+    },
+    'process-snapshots-every-5-minutes': {
+        'task': 'scraper.tasks.process_snapshots',
+        'schedule': crontab(minute='*/5'),
+        # 'name': 'Take snapshots of targets every minute',
+        'options': {
+            'expires': 240,
+            'priority': 2,  # low priority
         },
     },
 }
