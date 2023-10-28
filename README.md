@@ -1,7 +1,5 @@
 # fourmizzz_auto_tracker_v2
 
-# TODO Install pre commit
-
 ## Install deps
 
 ```bash
