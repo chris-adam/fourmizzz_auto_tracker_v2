@@ -5,13 +5,25 @@ from scraper.web_agent import get_alliance_members
 
 
 class FourmizzzServer(models.Model):
-    name = models.fields.CharField(max_length=100, choices=[("s1", "s1"), ("s2", "s2"), ("s3", "s3"), ("s4", "s4")], unique=True)
-    username = models.fields.CharField(max_length=100, help_text="This is not used. This is only for you to remeber what account you picked the cookie from.")
-    cookie_session = models.fields.CharField(max_length=100, help_text=f"""Grab the value from cookie PHPSESSID ({format_html("<a target='_blank' rel='noopener' href='https://developer.chrome.com/docs/devtools/application/cookies/'>Click here</a>")})""")
-    n_scanned_pages = models.fields.IntegerField(verbose_name="Number of scanned pages", default=100)
+    name = models.fields.CharField(
+        max_length=100,
+        choices=[("s1", "s1"), ("s2", "s2"), ("s3", "s3"), ("s4", "s4")],
+        unique=True,
+    )
+    username = models.fields.CharField(
+        max_length=100,
+        help_text="This is not used. This is only for you to remember what account you picked the cookie from.",
+    )
+    cookie_session = models.fields.CharField(
+        max_length=100,
+        help_text=f"""Grab the value from cookie PHPSESSID ({format_html("<a target='_blank' rel='noopener' href='https://developer.chrome.com/docs/devtools/application/cookies/'>Click here</a>")})""",
+    )
+    n_scanned_pages = models.fields.IntegerField(
+        verbose_name="Number of scanned pages", default=100
+    )
 
     def __str__(self):
-        return f'{self.name}'
+        return f"{self.name}"
 
 
 class AllianceTarget(models.Model):
@@ -19,12 +31,14 @@ class AllianceTarget(models.Model):
     server = models.ForeignKey(FourmizzzServer, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ('server', 'name')
+        unique_together = ("server", "name")
 
     def save(self, *args, **kwargs):
         super(AllianceTarget, self).save(*args, **kwargs)
 
-        player_names = get_alliance_members(self.server.name, self.name, self.server.cookie_session)
+        player_names = get_alliance_members(
+            self.server.name, self.name, self.server.cookie_session
+        )
 
         player_targets = []
         for player_name in player_names:
@@ -51,9 +65,10 @@ class PlayerTarget(models.Model):
         blank=True,
         editable=False,  # Make PlayerTargets not editable by the user
     )
+    mv = models.fields.BooleanField(default=False)
 
     class Meta:
-        unique_together = ('server', 'name')
+        unique_together = ("server", "name")
 
     def __str__(self) -> str:
         return f"{self.name} ({self.server.name})"

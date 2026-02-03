@@ -1,24 +1,29 @@
-version: '3'
-
 services:
-  timescaledb:
-    image: timescale/timescaledb-ha:pg15-latest
-    container_name: timescaledb
+  postgres:
+    image: postgres:17
+    container_name: postgres_dev
     ports:
       - 127.0.0.1:5432:5432
     volumes:
-      - timescaledb_data:/home/postgres/pgdata/data
+      - postgres_data:/home/postgres/pgdata/data
     env_file:
       - postgres.env
+    networks:
+      - dev
 
   rabbitmq:
     image: rabbitmq:3.12
-    container_name: rabbitmq
+    container_name: rabbitmq_dev
     ports:
       - 127.0.0.1:5672:5672
     env_file:
       - rabbitmq.env
-
+    networks:
+      - dev
 
 volumes:
-  timescaledb_data:
+  postgres_data:
+
+networks:
+  dev:
+    driver: bridge

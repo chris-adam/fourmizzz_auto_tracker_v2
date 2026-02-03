@@ -1,8 +1,6 @@
-version: '3'
-
 services:
   timescaledb:
-    image: timescale/timescaledb-ha:pg15-latest
+    image: postgres:17
     container_name: timescaledb
     expose:
       - 5432
@@ -20,7 +18,7 @@ services:
     env_file:
       - rabbitmq.env
     restart: always
-  
+
   django:
     container_name: django
     build:
@@ -34,6 +32,19 @@ services:
       - django.env
     depends_on:
       - timescaledb
+      - discord
+    restart: always
+
+  discord:
+    container_name: discord
+    build:
+      dockerfile: docker/discord/Dockerfile
+    expose:
+      - 5000
+    ports:
+      - 5000:5000
+    env_file:
+      - discord.env
     restart: always
 
   celery:
@@ -65,11 +76,8 @@ services:
       dockerfile: docker/Dockerfile
       target: nginx
       network: host
-      args:
-        - CERTBOT_EMAIL=adam.chris@live.be
-        - DOMAIN_LIST=tracker.swarm-empire.com
     ports:
-      - 80:80
+      - 8080:8080
       - 443:443
     depends_on:
       - django
