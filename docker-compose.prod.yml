@@ -81,10 +81,7 @@ services:
     depends_on:
       - django
     restart: always
-    volumes:
-      - letsencrypt:/etc/letsencrypt
 
 
 volumes:
   timescaledb_data:
-  letsencrypt:
