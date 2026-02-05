@@ -54,7 +54,7 @@ def check_mv_player(mv_player_pk: int):
         mv_player.save()
         send_message(
             category=mv_player.server.name,
-            channel=mv_player.alliance.name or mv_player.name,
+            forum=mv_player.alliance.name or mv_player.name,
             thread=mv_player.name,
             title=f"{mv_player.name} n'est plus en vacances !!!",
             description="",
@@ -96,7 +96,7 @@ def take_player_precision_snapshot(player_pk: int) -> Tuple[int, int]:
         player.save()
         send_message(
             category=player.server.name,
-            channel=player.alliance.name or player.name,
+            forum=player.alliance.name or player.name,
             thread=player.name,
             title=f"{player.name} est en vacances",
             description="",
@@ -305,7 +305,7 @@ def take_ranking_snapshots() -> None:
 
 def send_message(
     category: str,
-    channel: str,
+    forum: str,
     thread: str,
     title: str,
     description: str,
@@ -314,7 +314,7 @@ def send_message(
 ) -> None:
     data = {
         "category": category,
-        "channel": channel,
+        "forum": forum,
         "thread": thread,
         "title": title,
         "description": description,
@@ -324,7 +324,7 @@ def send_message(
     if color:
         data["color"] = color
 
-    r = requests.post("http://discord:5000/message", json=data)
+    r = requests.post("http://discord:5000/post", json=data)
     if r.status_code != 200:
         raise Exception(f"Failed to send message: {r.text}")
 
@@ -404,7 +404,7 @@ def process_player_precision_snapshots(
             notification_message += f"{format_move(ranking_snapshot.server, ranking_snapshot.player_name, ranking_snapshot, field_name=field_name, timestamp=False,)}\n"
 
         category = player_target.server.name
-        channel = player_target.alliance.name or player_target.name
+        forum = player_target.alliance.name or player_target.name
         title = (
             "Mouvement de Tdc"
             if field_name == "hunting_field"
@@ -414,7 +414,7 @@ def process_player_precision_snapshots(
         silent = field_name == "hunting_field"
         send_message(
             category,
-            channel,
+            forum,
             player_target.name,
             title,
             notification_message,
