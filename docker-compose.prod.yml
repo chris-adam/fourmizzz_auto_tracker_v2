@@ -77,11 +77,9 @@ services:
       target: nginx
     ports:
       - 8080:8080
-      - 443:443
     depends_on:
       - django
     restart: always
-
 
 volumes:
   timescaledb_data:
