@@ -337,6 +337,7 @@ def process_player_precision_snapshots(
         server: FourmizzzServer,
         player_name: str,
         snapshot: Union[PrecisionSnapshot, RankingSnapshot],
+        field_name: Literal["hunting_field", "trophies"],
         timestamp: bool = True,
     ):
         alliance_name = get_player_alliance(
@@ -347,15 +348,15 @@ def process_player_precision_snapshots(
             if alliance_name is None
             else f"([{alliance_name}](http://{server.name}.fourmizzz.fr/classementAlliance.php?alliance={alliance_name}))"
         )
-        hunting_field_before = "{:,}".format(
-            snapshot.hunting_field - snapshot.hunting_field_diff
+        field_before = "{:,}".format(
+            getattr(snapshot, field_name) - getattr(snapshot, f"{field_name}_diff")
         ).replace(",", " ")
-        hunting_field_after = "{:,}".format(snapshot.hunting_field).replace(",", " ")
-        hunting_field_diff = "{:+,}".format(snapshot.hunting_field_diff).replace(
+        field_after = "{:,}".format(getattr(snapshot, field_name)).replace(",", " ")
+        field_diff = "{:+,}".format(getattr(snapshot, f"{field_name}_diff")).replace(
             ",", " "
         )
         snapshot_time = timezone.localtime(snapshot.time, pytz.timezone(TIME_ZONE))
-        message = f"[{player_name}](http://{server.name}.fourmizzz.fr/Membre.php?Pseudo={player_name}){alliance}: {hunting_field_before} -> {hunting_field_after} ({hunting_field_diff})\n"
+        message = f"[{player_name}](http://{server.name}.fourmizzz.fr/Membre.php?Pseudo={player_name}){alliance}: {field_before} -> {field_after} ({field_diff})\n"
         if timestamp:
             message = snapshot_time.strftime("%d/%m/%Y %H:%M \n") + message
         return message
@@ -394,12 +395,13 @@ def process_player_precision_snapshots(
                 precision_snapshot.player.server,
                 precision_snapshot.player.name,
                 precision_snapshot,
+                field_name=field_name,
             )
 
         notification_message += "\nMouvements correspondants:\n"
         for ranking_snapshot_pk in matched_snapshots_pk:
             ranking_snapshot = RankingSnapshot.objects.get(pk=ranking_snapshot_pk)
-            notification_message += f"{format_move(ranking_snapshot.server, ranking_snapshot.player_name, ranking_snapshot, timestamp=False)}\n"
+            notification_message += f"{format_move(ranking_snapshot.server, ranking_snapshot.player_name, ranking_snapshot, field_name=field_name, timestamp=False,)}\n"
 
         category = player_target.server.name
         channel = player_target.alliance.name or player_target.name
