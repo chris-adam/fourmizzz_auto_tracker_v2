@@ -362,6 +362,7 @@ def process_player_precision_snapshots(
         return message
 
     def find_matched_snapshots(
+        last_player_ranking_snapshot: RankingSnapshot,
         snapshots: QuerySet[RankingSnapshot],
         field_name: Literal["hunting_field", "trophies"],
     ):
@@ -391,12 +392,13 @@ def process_player_precision_snapshots(
 
         notification_message = "Mouvements de la cible:\n"
         for precision_snapshot in unprocessed_player_snapshots:
-            notification_message += format_move(
-                precision_snapshot.player.server,
-                precision_snapshot.player.name,
-                precision_snapshot,
-                field_name=field_name,
-            )
+            if getattr(precision_snapshot, f"{field_name}_diff") != 0:
+                notification_message += format_move(
+                    precision_snapshot.player.server,
+                    precision_snapshot.player.name,
+                    precision_snapshot,
+                    field_name=field_name,
+                )
 
         notification_message += "\nMouvements correspondants:\n"
         for ranking_snapshot_pk in matched_snapshots_pk:
@@ -460,12 +462,26 @@ def process_player_precision_snapshots(
     )
 
     hf_simultaneous_snapshots = simultaneous_snapshots.exclude(hunting_field_diff=0)
-    if hf_simultaneous_snapshots:
-        find_matched_snapshots(hf_simultaneous_snapshots, "hunting_field")
+    if (
+        hf_simultaneous_snapshots
+        and last_player_ranking_snapshot.hunting_field_diff != 0
+    ):
+        find_matched_snapshots(
+            last_player_ranking_snapshot,
+            hf_simultaneous_snapshots,
+            "hunting_field",
+        )
 
     trophies_simultaneous_snapshots = simultaneous_snapshots.exclude(trophies_diff=0)
-    if trophies_simultaneous_snapshots:
-        find_matched_snapshots(trophies_simultaneous_snapshots, "trophies")
+    if (
+        trophies_simultaneous_snapshots
+        and last_player_ranking_snapshot.trophies_diff != 0
+    ):
+        find_matched_snapshots(
+            last_player_ranking_snapshot,
+            trophies_simultaneous_snapshots,
+            "trophies",
+        )
 
     unprocessed_player_snapshots.update(processed=True)
 

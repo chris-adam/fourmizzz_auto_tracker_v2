@@ -1,3 +1,4 @@
+# TODO Merge the two docker compose files
 services:
   timescaledb:
     image: postgres:17
