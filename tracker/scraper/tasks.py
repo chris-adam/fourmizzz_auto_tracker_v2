@@ -1,12 +1,3 @@
-import datetime
-import itertools
-from typing import List
-from typing import Literal
-from typing import Tuple
-from typing import Union
-
-import pytz
-import requests
 from bs4 import BeautifulSoup
 from celery import chain
 from celery import group
@@ -19,9 +10,18 @@ from scraper.models import PlayerTarget
 from scraper.models import PrecisionSnapshot
 from scraper.models import RankingSnapshot
 from scraper.web_agent import get_player_alliance
-
 from tracker.celery import app
 from tracker.settings import TIME_ZONE
+from typing import List
+from typing import Literal
+from typing import Tuple
+from typing import Union
+
+import datetime
+import itertools
+import pytz
+import requests
+
 
 # --- MV
 
@@ -54,10 +54,10 @@ def check_mv_player(mv_player_pk: int):
         mv_player.save()
         send_message(
             category=mv_player.server.name,
-            channel=mv_player.alliance.name or mv_player.name,
+            forum=mv_player.alliance.name or mv_player.name,
             thread=mv_player.name,
             title=f"{mv_player.name} n'est plus en vacances !!!",
-            description="",
+            description=datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             color="03b2f8",
         )
 
@@ -96,10 +96,10 @@ def take_player_precision_snapshot(player_pk: int) -> Tuple[int, int]:
         player.save()
         send_message(
             category=player.server.name,
-            channel=player.alliance.name or player.name,
+            forum=player.alliance.name or player.name,
             thread=player.name,
             title=f"{player.name} est en vacances",
-            description="",
+            description=datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             color="03b2f8",
         )
 
@@ -274,7 +274,7 @@ def update_n_scanned_pages(ranking_snapshot_results: List[List]):
             new_page -= 1
 
     # Set hard limit to 150 pages because of hardware limitations
-    new_page = min(150, new_page)
+    new_page = max(1, min(150, new_page))
     server.n_scanned_pages = new_page
     server.save()
 
@@ -305,7 +305,7 @@ def take_ranking_snapshots() -> None:
 
 def send_message(
     category: str,
-    channel: str,
+    forum: str,
     thread: str,
     title: str,
     description: str,
@@ -314,7 +314,7 @@ def send_message(
 ) -> None:
     data = {
         "category": category,
-        "channel": channel,
+        "forum": forum,
         "thread": thread,
         "title": title,
         "description": description,
@@ -324,7 +324,7 @@ def send_message(
     if color:
         data["color"] = color
 
-    r = requests.post("http://discord:5000/message", json=data)
+    r = requests.post("http://discord:5000/post", json=data)
     if r.status_code != 200:
         raise Exception(f"Failed to send message: {r.text}")
 
@@ -337,6 +337,7 @@ def process_player_precision_snapshots(
         server: FourmizzzServer,
         player_name: str,
         snapshot: Union[PrecisionSnapshot, RankingSnapshot],
+        field_name: Literal["hunting_field", "trophies"],
         timestamp: bool = True,
     ):
         alliance_name = get_player_alliance(
@@ -347,20 +348,21 @@ def process_player_precision_snapshots(
             if alliance_name is None
             else f"([{alliance_name}](http://{server.name}.fourmizzz.fr/classementAlliance.php?alliance={alliance_name}))"
         )
-        hunting_field_before = "{:,}".format(
-            snapshot.hunting_field - snapshot.hunting_field_diff
+        field_before = "{:,}".format(
+            getattr(snapshot, field_name) - getattr(snapshot, f"{field_name}_diff")
         ).replace(",", " ")
-        hunting_field_after = "{:,}".format(snapshot.hunting_field).replace(",", " ")
-        hunting_field_diff = "{:+,}".format(snapshot.hunting_field_diff).replace(
+        field_after = "{:,}".format(getattr(snapshot, field_name)).replace(",", " ")
+        field_diff = "{:+,}".format(getattr(snapshot, f"{field_name}_diff")).replace(
             ",", " "
         )
         snapshot_time = timezone.localtime(snapshot.time, pytz.timezone(TIME_ZONE))
-        message = f"[{player_name}](http://{server.name}.fourmizzz.fr/Membre.php?Pseudo={player_name}){alliance}: {hunting_field_before} -> {hunting_field_after} ({hunting_field_diff})\n"
+        message = f"[{player_name}](http://{server.name}.fourmizzz.fr/Membre.php?Pseudo={player_name}){alliance}: {field_before} -> {field_after} ({field_diff})\n"
         if timestamp:
             message = snapshot_time.strftime("%d/%m/%Y %H:%M \n") + message
         return message
 
     def find_matched_snapshots(
+        last_player_ranking_snapshot: RankingSnapshot,
         snapshots: QuerySet[RankingSnapshot],
         field_name: Literal["hunting_field", "trophies"],
     ):
@@ -390,19 +392,21 @@ def process_player_precision_snapshots(
 
         notification_message = "Mouvements de la cible:\n"
         for precision_snapshot in unprocessed_player_snapshots:
-            notification_message += format_move(
-                precision_snapshot.player.server,
-                precision_snapshot.player.name,
-                precision_snapshot,
-            )
+            if getattr(precision_snapshot, f"{field_name}_diff") != 0:
+                notification_message += format_move(
+                    precision_snapshot.player.server,
+                    precision_snapshot.player.name,
+                    precision_snapshot,
+                    field_name=field_name,
+                )
 
         notification_message += "\nMouvements correspondants:\n"
         for ranking_snapshot_pk in matched_snapshots_pk:
             ranking_snapshot = RankingSnapshot.objects.get(pk=ranking_snapshot_pk)
-            notification_message += f"{format_move(ranking_snapshot.server, ranking_snapshot.player_name, ranking_snapshot, timestamp=False)}\n"
+            notification_message += f"{format_move(ranking_snapshot.server, ranking_snapshot.player_name, ranking_snapshot, field_name=field_name, timestamp=False,)}\n"
 
         category = player_target.server.name
-        channel = player_target.alliance.name or player_target.name
+        forum = player_target.alliance.name or player_target.name
         title = (
             "Mouvement de Tdc"
             if field_name == "hunting_field"
@@ -412,7 +416,7 @@ def process_player_precision_snapshots(
         silent = field_name == "hunting_field"
         send_message(
             category,
-            channel,
+            forum,
             player_target.name,
             title,
             notification_message,
@@ -458,12 +462,26 @@ def process_player_precision_snapshots(
     )
 
     hf_simultaneous_snapshots = simultaneous_snapshots.exclude(hunting_field_diff=0)
-    if hf_simultaneous_snapshots:
-        find_matched_snapshots(hf_simultaneous_snapshots, "hunting_field")
+    if (
+        hf_simultaneous_snapshots
+        and last_player_ranking_snapshot.hunting_field_diff != 0
+    ):
+        find_matched_snapshots(
+            last_player_ranking_snapshot,
+            hf_simultaneous_snapshots,
+            "hunting_field",
+        )
 
     trophies_simultaneous_snapshots = simultaneous_snapshots.exclude(trophies_diff=0)
-    if trophies_simultaneous_snapshots:
-        find_matched_snapshots(trophies_simultaneous_snapshots, "trophies")
+    if (
+        trophies_simultaneous_snapshots
+        and last_player_ranking_snapshot.trophies_diff != 0
+    ):
+        find_matched_snapshots(
+            last_player_ranking_snapshot,
+            trophies_simultaneous_snapshots,
+            "trophies",
+        )
 
     unprocessed_player_snapshots.update(processed=True)
 
