@@ -1,10 +1,10 @@
-from aiohttp import web
-from discord.ext import commands
-
 import asyncio
-import discord
 import os
 
+from aiohttp import web
+
+import discord
+from discord.ext import commands
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
