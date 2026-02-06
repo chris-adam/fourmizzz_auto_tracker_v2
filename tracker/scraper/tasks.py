@@ -1,12 +1,3 @@
-import datetime
-import itertools
-from typing import List
-from typing import Literal
-from typing import Tuple
-from typing import Union
-
-import pytz
-import requests
 from bs4 import BeautifulSoup
 from celery import chain
 from celery import group
@@ -19,9 +10,18 @@ from scraper.models import PlayerTarget
 from scraper.models import PrecisionSnapshot
 from scraper.models import RankingSnapshot
 from scraper.web_agent import get_player_alliance
-
 from tracker.celery import app
 from tracker.settings import TIME_ZONE
+from typing import List
+from typing import Literal
+from typing import Tuple
+from typing import Union
+
+import datetime
+import itertools
+import pytz
+import requests
+
 
 # --- MV
 
@@ -274,7 +274,7 @@ def update_n_scanned_pages(ranking_snapshot_results: List[List]):
             new_page -= 1
 
     # Set hard limit to 150 pages because of hardware limitations
-    new_page = min(150, new_page)
+    new_page = max(1, min(150, new_page))
     server.n_scanned_pages = new_page
     server.save()
 
