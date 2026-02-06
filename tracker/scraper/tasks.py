@@ -57,7 +57,7 @@ def check_mv_player(mv_player_pk: int):
             forum=mv_player.alliance.name or mv_player.name,
             thread=mv_player.name,
             title=f"{mv_player.name} n'est plus en vacances !!!",
-            description="",
+            description=datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             color="03b2f8",
         )
 
@@ -99,7 +99,7 @@ def take_player_precision_snapshot(player_pk: int) -> Tuple[int, int]:
             forum=player.alliance.name or player.name,
             thread=player.name,
             title=f"{player.name} est en vacances",
-            description="",
+            description=datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
             color="03b2f8",
         )
 
