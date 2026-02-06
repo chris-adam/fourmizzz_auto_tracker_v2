@@ -1,10 +1,10 @@
+from aiohttp import web
+from discord.ext import commands
+
 import asyncio
+import discord
 import os
 
-from aiohttp import web
-
-import discord
-from discord.ext import commands
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 GUILD_ID = int(os.getenv("DISCORD_GUILD_ID"))
@@ -43,9 +43,23 @@ async def post(request):
             archived_threads = [t async for t in forum.archived_threads()]
             thread = discord.utils.get(archived_threads, name=thread_name)
         if thread is None:
-            await forum.create_thread(name=thread_name, embed=embed)
+            thread, _ = await forum.create_thread(name=thread_name, embed=embed)
         else:
             await thread.send(embed=embed, silent=silent)
+        # Add all guild members to the thread
+        guild = bot.get_guild(GUILD_ID)
+        thread_members = await thread.fetch_members()
+        thread_members = [m.id for m in thread_members]
+        for guild_member in guild.members:
+            if not guild_member.bot and guild_member.id not in thread_members:
+                while True:
+                    try:
+                        await thread.add_user(guild_member)
+                        break
+                    except discord.Forbidden:
+                        break
+                    except discord.errors.HTTPException:
+                        await asyncio.sleep(5)
 
         return web.json_response({"message": "success"})
     except Exception as e:
