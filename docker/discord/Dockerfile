@@ -14,6 +14,10 @@ RUN uv sync
 
 FROM python:3.11-slim AS discord
 
+RUN apt-get update && apt-get install -yqq \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN useradd -ms /bin/bash --badname 1000 \
     && mkdir /opt/discord \
     && chown -R 1000:1000 /opt/discord
@@ -28,3 +32,5 @@ USER 1000
 WORKDIR /opt/discord
 
 CMD [ "python", "main.py" ]
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/health

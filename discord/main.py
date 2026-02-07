@@ -88,79 +88,14 @@ async def get_forum(category_name, forum_name):
     return forum.id
 
 
-async def migrate(request):
-    """Temporaty route to migrate text channels to forums"""
-    try:
-        data = await request.json()
-        category_name = data.get("category")
-
-        guild = bot.get_guild(GUILD_ID)
-        category = discord.utils.get(guild.categories, name=category_name)
-        if not category:
-            return web.json_response({"message": "Category not found"}, status=404)
-
-        for channel in category.text_channels:
-            forum = discord.utils.get(category.forums, name=channel.name)
-            if not forum:
-                forum = await category.create_forum(name=channel.name)
-
-            for thread in channel.threads:
-                messages = [
-                    m async for m in thread.history(limit=None, oldest_first=True)
-                ]
-                if not messages:
-                    continue
-
-                first_message = None
-                while not first_message and messages:
-                    first_message = messages.pop(0)
-                    kwargs = {
-                        "content": first_message.content,
-                    }
-                    if first_message.embeds:
-                        kwargs["embed"] = first_message.embeds[0]
-                    else:
-                        first_message = None
-                        continue
-                if not first_message:
-                    continue
-                forum_thread = discord.utils.get(forum.threads, name=thread.name)
-                if forum_thread is None:
-                    archived_forum_threads = [t async for t in forum.archived_threads()]
-                    forum_thread = discord.utils.get(
-                        archived_forum_threads, name=thread.name
-                    )
-                if forum_thread is None:
-                    forum_thread, _ = await forum.create_thread(
-                        name=thread.name,
-                        **kwargs,
-                    )
-                else:
-                    await forum_thread.send(**kwargs)
-
-                for message in messages:
-                    kwargs = {}
-                    if message.content:
-                        kwargs["content"] = message.content
-                    if message.embeds:
-                        kwargs["embeds"] = message.embeds
-                    else:
-                        continue
-                    if kwargs:
-                        await forum_thread.send(**kwargs)
-
-        return web.json_response({"message": "success"})
-    except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        return web.json_response({"message": str(e)}, status=500)
+async def health(request):
+    return web.json_response({"message": "success"})
 
 
 async def setup_http_server():
     app = web.Application()
+    app.router.add_get("/health", health)
     app.router.add_post("/post", post)
-    app.router.add_post("/migrate", migrate)
 
     runner = web.AppRunner(app)
     await runner.setup()
