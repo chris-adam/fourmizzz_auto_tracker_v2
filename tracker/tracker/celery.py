@@ -53,4 +53,12 @@ app.conf.beat_schedule = {
             "priority": 9,  # highest priority
         },
     },
+    "clean-old-snapshots-every-day": {
+        "task": "scraper.tasks.clean_old_snapshots",
+        "schedule": crontab(hour="0", minute="0"),
+        "options": {
+            "expires": 240,
+            "priority": 2,  # low priority
+        },
+    },
 }
