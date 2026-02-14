@@ -509,3 +509,13 @@ def process_snapshots() -> None:
         )
 
     return group(process_snapshot_subtasks).delay()
+
+
+@app.task
+def clean_old_snapshots() -> None:
+    PrecisionSnapshot.objects.filter(
+        time__lt=datetime.datetime.now() - datetime.timedelta(days=7)
+    ).delete()
+    RankingSnapshot.objects.filter(
+        time__lt=datetime.datetime.now() - datetime.timedelta(days=7)
+    ).delete()
