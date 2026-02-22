@@ -514,8 +514,8 @@ def process_snapshots() -> None:
 @app.task
 def clean_old_snapshots() -> None:
     PrecisionSnapshot.objects.filter(
-        time__lt=datetime.datetime.now() - datetime.timedelta(days=7)
+        time__lt=datetime.datetime.now() - datetime.timedelta(days=3)
     ).delete()
     RankingSnapshot.objects.filter(
-        time__lt=datetime.datetime.now() - datetime.timedelta(days=7)
+        time__lt=datetime.datetime.now() - datetime.timedelta(days=3)
     ).delete()
