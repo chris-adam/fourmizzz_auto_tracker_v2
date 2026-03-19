@@ -19,13 +19,21 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
 app.conf.beat_schedule = {
+    "check-mv-players": {
+        "task": "scraper.tasks.check_mv_players",
+        "schedule": timedelta(seconds=5),
+        "options": {
+            "expires": 5,
+            "priority": 9,  # highest priority
+        },
+    },
     "take-precision-snapshots-of-targets-every-minute": {
         "task": "scraper.tasks.take_precision_snapshots",
         "schedule": crontab(minute="*"),
         "options": {
             "countdown": 4,
             "expires": 45,
-            "priority": 9,  # highest priority
+            "priority": 8,  # very high priority
         },
     },
     "take-ranking-snapshots-every-minute": {
@@ -43,14 +51,6 @@ app.conf.beat_schedule = {
         "options": {
             "expires": 240,
             "priority": 2,  # low priority
-        },
-    },
-    "check-mv-players": {
-        "task": "scraper.tasks.check_mv_players",
-        "schedule": timedelta(seconds=5),
-        "options": {
-            "expires": 5,
-            "priority": 9,  # highest priority
         },
     },
     "clean-old-snapshots-every-day": {
