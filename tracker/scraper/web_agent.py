@@ -1,11 +1,14 @@
+import logging
 import requests
 from bs4 import BeautifulSoup
 
 from typing import List, Union, NoReturn
 
+logger = logging.getLogger(__name__)
+
 
 def player_exists(server: str, player_name: str, cookie_session: str) -> bool:
-    cookies = {'PHPSESSID': cookie_session}
+    cookies = {"PHPSESSID": cookie_session}
     url = f"http://{server}.fourmizzz.fr/Membre.php?Pseudo={player_name}"
     r = requests.get(url, cookies=cookies)
     soup = BeautifulSoup(r.text, "html.parser")
@@ -16,7 +19,7 @@ def player_exists(server: str, player_name: str, cookie_session: str) -> bool:
 
 def validate_fourmizzz_cookie_session(server: str, cookie_session: str) -> bool:
     url = f"http://{server}.fourmizzz.fr/alliance.php"
-    cookies = {'PHPSESSID': cookie_session}
+    cookies = {"PHPSESSID": cookie_session}
     r = requests.get(url, cookies=cookies)
     soup = BeautifulSoup(r.text, "html.parser")
     menu = soup.find(id="centre")
@@ -29,7 +32,7 @@ def validate_fourmizzz_cookie_session(server: str, cookie_session: str) -> bool:
 
 def get_alliance_members(server: str, alliance: str, cookie_session: str) -> List[str]:
     url = f"http://{server}.fourmizzz.fr/classementAlliance.php?alliance={alliance}"
-    cookies = {'PHPSESSID': cookie_session}
+    cookies = {"PHPSESSID": cookie_session}
 
     r = requests.get(url, cookies=cookies)
     soup = BeautifulSoup(r.text, "html.parser")
@@ -40,15 +43,29 @@ def get_alliance_members(server: str, alliance: str, cookie_session: str) -> Lis
     return member_list
 
 
-def get_player_alliance(server: str, player_name: str, cookie_session: str) -> Union[str, NoReturn]:
+def get_player_alliance(
+    server: str, player_name: str, cookie_session: str
+) -> Union[str, NoReturn]:
     """
     Returns the alliance in which the player is, or None if the player has no alliance
     """
-    cookies = {'PHPSESSID': cookie_session}
+    cookies = {"PHPSESSID": cookie_session}
     url = f"http://{server}.fourmizzz.fr/Membre.php?Pseudo={player_name}"
     r = requests.get(url, cookies=cookies)
     soup = BeautifulSoup(r.text, "html.parser")
     try:
-        return soup.find("div", {"class": "boite_membre"}).find("table").find("tr").find_all("td")[1].find("a").text
+        return (
+            soup.find("div", {"class": "boite_membre"})
+            .find("table")
+            .find("tr")
+            .find_all("td")[1]
+            .find("a")
+            .text
+        )
     except AttributeError:
+        return
+    except IndexError:
+        logger.exception(
+            "Alliance not found for player '%s' on server '%s'", player_name, server
+        )
         return
