@@ -21,7 +21,7 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     "check-mv-players": {
         "task": "scraper.tasks.check_mv_players",
-        "schedule": timedelta(seconds=5),
+        "schedule": timedelta(seconds=3),
         "options": {
             "expires": 5,
             "priority": 9,  # highest priority
