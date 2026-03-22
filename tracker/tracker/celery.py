@@ -61,4 +61,11 @@ app.conf.beat_schedule = {
             "priority": 2,  # low priority
         },
     },
+    "backend_cleanup": {
+        "task": "celery.backend_cleanup",
+        "schedule": crontab(hour="1", minute="0"),
+        "options": {
+            "priority": 2,  # low priority
+        },
+    },
 }

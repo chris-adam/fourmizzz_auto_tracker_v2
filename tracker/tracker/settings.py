@@ -177,3 +177,6 @@ CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'django-cache'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TIME_LIMIT = 30
+CELERY_TASK_ANNOTATIONS = {
+    'celery.backend_cleanup': {'time_limit': 600},
+}
