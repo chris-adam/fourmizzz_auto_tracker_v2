@@ -273,8 +273,8 @@ def update_n_scanned_pages(ranking_snapshot_results: List[List]):
         if lowest_hunting_field_from_ranking_page < lowest_current_hunting_field // 3:
             new_page -= 1
 
-    # Set hard limit to 150 pages because of hardware limitations
-    new_page = max(1, min(150, new_page))
+    # Set hard limit to 100 pages because of hardware limitations
+    new_page = max(1, min(100, new_page))
     server.n_scanned_pages = new_page
     server.save()
 
