@@ -370,23 +370,20 @@ def process_player_precision_snapshots(
         snapshots = snapshots.annotate(
             abs_diff=Func(F(f"{field_name}_diff"), function="ABS")
         )
-        # Desc order by absolute value
-        snapshots = snapshots.order_by(field_name).order_by("abs_diff").reverse()
+        # Desc order by absolute value, fetch all in one query
+        snapshot_data = list(
+            snapshots.order_by(field_name).order_by("abs_diff").reverse()
+            .values_list("pk", f"{field_name}_diff")
+        )
 
-        # Look for combinations explanation this snapshot change
+        # Look for combinations explaining this snapshot change (all in memory, no DB queries)
+        target = -getattr(last_player_ranking_snapshot, f"{field_name}_diff")
         r = 1
         matched_snapshots_pk = list()
-        while not matched_snapshots_pk and r <= len(snapshots) and r < 4:
-            for snapshots_pk in itertools.combinations(
-                snapshots.values_list("pk", flat=True), r
-            ):
-                snapshots_values = snapshots.filter(pk__in=snapshots_pk).values_list(
-                    f"{field_name}_diff", flat=True
-                )
-                if sum(snapshots_values) == -getattr(
-                    last_player_ranking_snapshot, f"{field_name}_diff"
-                ):
-                    matched_snapshots_pk.extend(snapshots_pk)
+        while not matched_snapshots_pk and r <= len(snapshot_data) and r < 4:
+            for combo in itertools.combinations(snapshot_data, r):
+                if sum(diff for _, diff in combo) == target:
+                    matched_snapshots_pk.extend(pk for pk, _ in combo)
                     break
             r += 1
 

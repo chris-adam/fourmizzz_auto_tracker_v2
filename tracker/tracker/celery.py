@@ -49,7 +49,7 @@ app.conf.beat_schedule = {
         "task": "scraper.tasks.process_snapshots",
         "schedule": crontab(minute="*/3"),
         "options": {
-            "expires": 240,
+            "expires": 120,
             "priority": 2,  # low priority
         },
     },
