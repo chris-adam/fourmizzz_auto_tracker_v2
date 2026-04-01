@@ -43,7 +43,15 @@ def check_mv_player(mv_player_pk: int):
 
     try:
         r = requests.get(url, cookies=cookies)
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
+        send_message(
+            category=mv_player.server.name,
+            forum="errors",
+            thread="check_mv_player",
+            title=f"Could not open player profile: {mv_player.name}",
+            description=str(e),
+            color="ed1c25",
+        )
         raise requests.exceptions.ConnectionError(
             f"Could not open player profile: {mv_player.name}"
         )
@@ -73,7 +81,15 @@ def take_player_precision_snapshot(player_pk: int) -> Tuple[int, int]:
 
     try:
         r = requests.get(url, cookies=cookies)
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
+        send_message(
+            category=player.server.name,
+            forum="errors",
+            thread="take_player_precision_snapshot",
+            title=f"Could not open player profile: {player.name}",
+            description=str(e),
+            color="ed1c25",
+        )
         raise requests.exceptions.ConnectionError(
             f"Could not open player profile: {player.name}"
         )
