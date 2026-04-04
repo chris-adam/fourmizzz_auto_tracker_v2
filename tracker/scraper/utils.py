@@ -12,6 +12,9 @@ def send_message(
     color: str = "",
     silent: bool = False,
 ) -> None:
+    if len(title) > 255:
+        description = title + "\n" + description
+        title = title[:253] + "..."
     data = {
         "category": category,
         "forum": forum,
