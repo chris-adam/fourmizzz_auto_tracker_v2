@@ -1,3 +1,12 @@
+import datetime
+import itertools
+from typing import List
+from typing import Literal
+from typing import Tuple
+from typing import Union
+
+import pytz
+import requests
 from bs4 import BeautifulSoup
 from celery import chain
 from celery import group
@@ -9,19 +18,12 @@ from scraper.models import FourmizzzServer
 from scraper.models import PlayerTarget
 from scraper.models import PrecisionSnapshot
 from scraper.models import RankingSnapshot
+from scraper.utils import send_error
+from scraper.utils import send_message
 from scraper.web_agent import get_player_alliance
+
 from tracker.celery import app
 from tracker.settings import TIME_ZONE
-from typing import List
-from typing import Literal
-from typing import Tuple
-from typing import Union
-
-import datetime
-import itertools
-import pytz
-import requests
-
 
 # --- MV
 
@@ -43,14 +45,11 @@ def check_mv_player(mv_player_pk: int):
 
     try:
         r = requests.get(url, cookies=cookies)
-    except requests.exceptions.ConnectionError as e:
-        send_message(
+    except requests.exceptions.ConnectionError:
+        send_error(
             category=mv_player.server.name,
-            forum="errors",
             thread="check_mv_player",
             title=f"Could not open player profile: {mv_player.name}",
-            description=str(e),
-            color="ed1c25",
         )
         raise requests.exceptions.ConnectionError(
             f"Could not open player profile: {mv_player.name}"
@@ -82,13 +81,10 @@ def take_player_precision_snapshot(player_pk: int) -> Tuple[int, int]:
     try:
         r = requests.get(url, cookies=cookies)
     except requests.exceptions.ConnectionError as e:
-        send_message(
+        send_error(
             category=player.server.name,
-            forum="errors",
             thread="take_player_precision_snapshot",
             title=f"Could not open player profile: {player.name}",
-            description=str(e),
-            color="ed1c25",
         )
         raise requests.exceptions.ConnectionError(
             f"Could not open player profile: {player.name}"
@@ -166,6 +162,11 @@ def take_page_ranking_snapshot(server_pk: int, page: int) -> Tuple[int, int, int
     try:
         r = requests.get(url, cookies=cookies)
     except requests.exceptions.ConnectionError:
+        send_error(
+            category=server.name,
+            thread="take_page_ranking_snapshot",
+            title=f"Could not open ranking page {page}",
+        )
         raise requests.exceptions.ConnectionError(f"Could not open ranking page {page}")
 
     soup = BeautifulSoup(r.text, "html.parser")
@@ -319,32 +320,6 @@ def take_ranking_snapshots() -> None:
 # --- Process snapshots
 
 
-def send_message(
-    category: str,
-    forum: str,
-    thread: str,
-    title: str,
-    description: str,
-    color: str = "",
-    silent: bool = False,
-) -> None:
-    data = {
-        "category": category,
-        "forum": forum,
-        "thread": thread,
-        "title": title,
-        "description": description,
-        "silent": silent,
-    }
-
-    if color:
-        data["color"] = color
-
-    r = requests.post("http://discord:5000/post", json=data)
-    if r.status_code != 200:
-        raise Exception(f"Failed to send message: {r.text}")
-
-
 @app.task
 def process_player_precision_snapshots(
     unprocessed_player_snapshot_pk: List[int],
@@ -388,7 +363,9 @@ def process_player_precision_snapshots(
         )
         # Desc order by absolute value, fetch all in one query
         snapshot_data = list(
-            snapshots.order_by(field_name).order_by("abs_diff").reverse()
+            snapshots.order_by(field_name)
+            .order_by("abs_diff")
+            .reverse()
             .values_list("pk", f"{field_name}_diff")
         )
 

@@ -1,8 +1,11 @@
 import logging
+from typing import List
+from typing import NoReturn
+from typing import Union
+
 import requests
 from bs4 import BeautifulSoup
-
-from typing import List, Union, NoReturn
+from scraper.utils import send_error
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +68,9 @@ def get_player_alliance(
     except AttributeError:
         return
     except IndexError:
-        logger.exception(
-            "Alliance not found for player '%s' on server '%s'", player_name, server
+        send_error(
+            category=server,
+            thread="get_player_alliance",
+            title=f"Alliance not found for player '{player_name}' on server '{server}'",
         )
         return
