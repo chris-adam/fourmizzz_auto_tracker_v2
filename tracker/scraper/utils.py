@@ -36,8 +36,10 @@ def send_error(
 ) -> None:
     send_message(
         category=category,
+        forum="errors",
         thread=thread,
         title=title,
         description=tb.format_exc(),
         color="ed1c25",
+        silent=False,
     )
