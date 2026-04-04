@@ -51,9 +51,7 @@ def check_mv_player(mv_player_pk: int):
             thread="check_mv_player",
             title=f"Could not open player profile: {mv_player.name}",
         )
-        raise requests.exceptions.ConnectionError(
-            f"Could not open player profile: {mv_player.name}"
-        )
+        raise
     soup = BeautifulSoup(r.text, "html.parser")
     mv = "Joueur en vacances" in soup.find("div", {"class": "boite_membre"}).text
     if mv_player.mv and not mv:
@@ -86,9 +84,7 @@ def take_player_precision_snapshot(player_pk: int) -> Tuple[int, int]:
             thread="take_player_precision_snapshot",
             title=f"Could not open player profile: {player.name}",
         )
-        raise requests.exceptions.ConnectionError(
-            f"Could not open player profile: {player.name}"
-        )
+        raise
     soup = BeautifulSoup(r.text, "html.parser")
     hunting_field = int(
         soup.find("table", {"class": "tableau_score"})
@@ -167,7 +163,7 @@ def take_page_ranking_snapshot(server_pk: int, page: int) -> Tuple[int, int, int
             thread="take_page_ranking_snapshot",
             title=f"Could not open ranking page {page}",
         )
-        raise requests.exceptions.ConnectionError(f"Could not open ranking page {page}")
+        raise
 
     soup = BeautifulSoup(r.text, "html.parser")
     table = soup.find("table", {"class": "tab_triable"})
@@ -422,7 +418,12 @@ def process_player_precision_snapshots(
     last_player_ranking_snapshot = RankingSnapshot.objects.filter(
         server=player_target.server, player_name=player_target.name
     ).last()
-    if last_player_ranking_snapshot is None:
+    try:
+        last_player_ranking_snapshot_time = last_player_ranking_snapshot.time.replace(
+            second=0,
+            microsecond=0,
+        )
+    except AttributeError:
         unprocessed_player_snapshots_str = "\n".join(
             [
                 f"{s.pk} - {s.time.strftime('%d/%m/%Y %H:%M:%S')}: {s.hunting_field} cm² (diff: {s.hunting_field_diff}) / {s.trophies} trophées (diff: {s.trophies_diff})"
@@ -436,10 +437,7 @@ def process_player_precision_snapshots(
             f"Last unprocessed precision snapshots are: \n{unprocessed_player_snapshots_str}",
         )
         unprocessed_player_snapshots.update(processed=True)
-    last_player_ranking_snapshot_time = last_player_ranking_snapshot.time.replace(
-        second=0,
-        microsecond=0,
-    )
+        raise
 
     if (
         last_player_ranking_snapshot_time + datetime.timedelta(minutes=1)
