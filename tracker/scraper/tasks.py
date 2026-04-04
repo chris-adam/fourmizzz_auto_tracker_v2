@@ -422,6 +422,19 @@ def process_player_precision_snapshots(
     last_player_ranking_snapshot = RankingSnapshot.objects.filter(
         server=player_target.server, player_name=player_target.name
     ).last()
+    if last_player_ranking_snapshot is None:
+        unprocessed_player_snapshots_str = "\n".join(
+            [
+                f"{s.pk} - {s.time}: {s.hunting_field} cm² (diff: {s.hunting_field_diff}) / {s.trophies} trophées (diff: {s.trophies_diff})"
+                for s in unprocessed_player_snapshots
+            ]
+        )
+        send_error(
+            category=player_target.server.name,
+            thread="process_player_precision_snapshots",
+            title=f"Could not find last player ranking snapshot: {player_target.name}. "
+            f"Last unprocessed precision snapshots are: \n{unprocessed_player_snapshots_str}",
+        )
     last_player_ranking_snapshot_time = last_player_ranking_snapshot.time.replace(
         second=0,
         microsecond=0,
