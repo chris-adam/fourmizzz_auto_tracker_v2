@@ -12,14 +12,14 @@ def send_message(
     color: str = "",
     silent: bool = False,
 ) -> None:
-    if len(title) > 255:
+    if len(title) > 255 or "\n" in title:
         split_title = [t.strip() for t in title.split("\n")]
         if len(split_title[0]) > 255:
-            description = title + "\n" + description
+            description = title + "\n\n" + description
             title = title[:253] + "..."
         else:
             title = split_title[0]
-            description = "\n".join(split_title[1:]) + description
+            description = "\n".join(split_title[1:]) + "\n\n" + description
     data = {
         "category": category,
         "forum": forum,
