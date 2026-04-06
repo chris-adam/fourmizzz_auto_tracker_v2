@@ -57,20 +57,17 @@ def get_player_alliance(
     r = requests.get(url, cookies=cookies)
     soup = BeautifulSoup(r.text, "html.parser")
     try:
-        return (
-            soup.find("div", {"class": "boite_membre"})
-            .find("table")
-            .find("tr")
-            .find_all("td")[1]
-            .find("a")
-            .text
-        )
-    except AttributeError:
-        return
-    except IndexError:
+        boite_membre = soup.find("div", {"class": "boite_membre"}).find("table")
+        if "Alliance" in boite_membre.find_all("tr")[0].text:
+            alliance_tr = boite_membre.find_all("tr")[0]
+        else:
+            alliance_tr = boite_membre.find_all("tr")[1]
+        alliance_td = alliance_tr.find_all("td")[1].find("a")
+        return None if not alliance_td else alliance_td.text
+    except Exception:
         send_error(
             category=server,
             thread="get_player_alliance",
             title=f"Alliance not found for player '{player_name}' on server '{server}'",
         )
-        return
+        raise
