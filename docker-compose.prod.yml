@@ -48,8 +48,8 @@ services:
       - discord.env
     restart: always
 
-  celery:
-    container_name: fmz_tracker_celery
+  celery_default:
+    container_name: fmz_tracker_celery_default
     build:
       dockerfile: docker/Dockerfile
       target: django
@@ -70,6 +70,33 @@ services:
       - worker
       - --loglevel=INFO
       - --beat
+      - -Q
+      - default
+    restart: always
+
+  celery_mv:
+    container_name: fmz_tracker_celery_mv
+    build:
+      dockerfile: docker/Dockerfile
+      target: django
+    env_file:
+      - postgres.env
+      - rabbitmq.env
+      - django.env
+    depends_on:
+      - rabbitmq
+      - postgres
+      - django
+    command:
+      - python
+      - -m
+      - celery
+      - -A
+      - tracker
+      - worker
+      - --loglevel=INFO
+      - -Q
+      - mv
     restart: always
 
   nginx:

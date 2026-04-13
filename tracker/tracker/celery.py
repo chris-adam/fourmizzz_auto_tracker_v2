@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from celery import Celery
 from celery.schedules import crontab
+from kombu import Queue
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "tracker.settings")
@@ -68,4 +69,16 @@ app.conf.beat_schedule = {
             "priority": 2,  # low priority
         },
     },
+}
+
+app.conf.task_default_queue = "default"
+
+app.conf.task_queues = (
+    Queue("default"),
+    Queue("mv"),
+)
+
+app.conf.task_routes = {
+    "scraper.tasks.check_mv_players": {"queue": "mv"},
+    "scraper.tasks.check_mv_player": {"queue": "mv"},
 }
