@@ -86,12 +86,16 @@ def take_player_precision_snapshot(player_pk: int) -> Tuple[int, int]:
         )
         raise
     soup = BeautifulSoup(r.text, "html.parser")
-    hunting_field = int(
-        soup.find("table", {"class": "tableau_score"})
-        .find_all("tr")[1]
-        .find_all("td")[1]
-        .text.replace(" ", "")
+    cell = soup.select_one(
+        "#centre > center > div:nth-child(2) > div:nth-child(3) > table > tr:nth-child(2) > td:nth-child(2)"
     )
+    hunting_field = int(cell.text.replace(" ", ""))
+    # hunting_field = int(
+    #     soup.find("table", {"class": "tableau_score"})
+    #     .find_all("tr")[1]
+    #     .find_all("td")[1]
+    #     .text.replace(" ", "")
+    # )
     trophies = int(
         soup.find("table", {"class": "tableau_score"})
         .find_all("tr")[4]

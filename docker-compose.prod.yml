@@ -1,4 +1,10 @@
 # TODO Merge the two docker compose files
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: postgres:17
@@ -10,6 +16,7 @@ services:
     env_file:
       - postgres.env
     restart: always
+    logging: *default-logging
 
   rabbitmq:
     image: rabbitmq:3.12
@@ -19,6 +26,7 @@ services:
     env_file:
       - rabbitmq.env
     restart: always
+    logging: *default-logging
 
   django:
     container_name: fmz_tracker_django
@@ -35,6 +43,7 @@ services:
       - postgres
       - discord
     restart: always
+    logging: *default-logging
 
   discord:
     container_name: fmz_tracker_discord
@@ -47,6 +56,7 @@ services:
     env_file:
       - discord.env
     restart: always
+    logging: *default-logging
 
   celery_default:
     container_name: fmz_tracker_celery_default
@@ -73,6 +83,7 @@ services:
       - -Q
       - default
     restart: always
+    logging: *default-logging
 
   celery_mv:
     container_name: fmz_tracker_celery_mv
@@ -98,6 +109,7 @@ services:
       - -Q
       - mv
     restart: always
+    logging: *default-logging
 
   nginx:
     container_name: fmz_tracker_nginx
@@ -109,6 +121,7 @@ services:
     depends_on:
       - django
     restart: always
+    logging: *default-logging
 
 volumes:
   postgres_data:
