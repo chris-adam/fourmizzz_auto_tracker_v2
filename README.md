@@ -177,6 +177,39 @@ The tracker reads the game through a Fourmizzz account, so you need to hand it y
 
 **That's it!** Within a few minutes, the tracker creates a channel in your Discord server named after the game server and alliance, and starts posting notifications there whenever a tracked player's stats change.
 
+## How the notifications are organized in Discord
+
+You don't have to create anything in Discord yourself — the bot builds everything on its own, following this structure:
+
+```
+Your Discord server
+│
+├── 📁 s1                                ← one category per game server you added
+│   │
+│   ├── 💬 my-alliance                   ← one forum channel per alliance you watch
+│   │   ├── 🧵 player-one                ← one thread (discussion) per player
+│   │   │     ├── 🟩 Mouvement de Tdc          (hunting field changed — sent silently)
+│   │   │     ├── 🟨 Mouvement de Trophées     (trophies changed)
+│   │   │     ├── 🟦 player-one est en vacances
+│   │   │     └── 🟦 player-one n'est plus en vacances !!!
+│   │   ├── 🧵 player-two
+│   │   └── 🧵 ...
+│   │
+│   └── 💬 errors                        ← technical problems are reported here
+│         └── 🟥 what went wrong (e.g. the game session expired)
+│
+└── 📁 s2                                ← appears if you watch a second game server
+    └── 💬 ...
+```
+
+In short:
+
+- Each **game server** you added in step 7a becomes a **category** (the big collapsible sections in Discord's channel list).
+- Each **alliance** you watch becomes a **forum channel** inside it, and every player of that alliance gets their own **thread** — so you can follow one player by simply opening their thread.
+- Messages are color-coded: 🟩 green for hunting field moves (these are sent *silently* to avoid ringing your phone all day), 🟨 gold for trophy moves, 🟦 blue when a player enters or leaves vacation mode.
+- The special **errors** forum is where the tracker complains when something is wrong — if you see red messages there, it's usually the game session that expired (see step 7a to fix it).
+- The bot automatically adds all members of your Discord server to every thread, so everyone gets the notifications without subscribing manually.
+
 ## Everyday use
 
 All these commands are run from a terminal, inside the project folder.
