@@ -6,8 +6,6 @@ from typing import Tuple
 from typing import Union
 
 import pytz
-import requests
-from bs4 import BeautifulSoup
 from celery import chain
 from celery import group
 from django.db.models import F
@@ -20,6 +18,7 @@ from scraper.models import PrecisionSnapshot
 from scraper.models import RankingSnapshot
 from scraper.utils import send_error
 from scraper.utils import send_message
+from scraper.web_agent import fetch
 from scraper.web_agent import get_player_alliance
 
 from tracker.celery import app
@@ -40,19 +39,7 @@ def check_mv_players():
 @app.task
 def check_mv_player(mv_player_pk: int):
     mv_player = PlayerTarget.objects.get(pk=mv_player_pk)
-    cookies = {"PHPSESSID": mv_player.server.cookie_session}
-    url = f"http://{mv_player.server.name}.fourmizzz.fr/Membre.php?Pseudo={mv_player.name}"
-
-    try:
-        r = requests.get(url, cookies=cookies)
-    except requests.exceptions.ConnectionError:
-        send_error(
-            category=mv_player.server.name,
-            thread="check_mv_player",
-            title=f"Could not open player profile: {mv_player.name}",
-        )
-        raise
-    soup = BeautifulSoup(r.text, "html.parser")
+    soup = fetch(mv_player.server, f"Membre.php?Pseudo={mv_player.name}")
     mv = "Joueur en vacances" in soup.find("div", {"class": "boite_membre"}).text
     if mv_player.mv and not mv:
         mv_player.mv = False
@@ -73,19 +60,7 @@ def check_mv_player(mv_player_pk: int):
 @app.task
 def take_player_precision_snapshot(player_pk: int) -> Tuple[int, int]:
     player = PlayerTarget.objects.get(pk=player_pk)
-    cookies = {"PHPSESSID": player.server.cookie_session}
-    url = f"http://{player.server.name}.fourmizzz.fr/Membre.php?Pseudo={player.name}"
-
-    try:
-        r = requests.get(url, cookies=cookies)
-    except requests.exceptions.ConnectionError as e:
-        send_error(
-            category=player.server.name,
-            thread="take_player_precision_snapshot",
-            title=f"Could not open player profile: {player.name}",
-        )
-        raise
-    soup = BeautifulSoup(r.text, "html.parser")
+    soup = fetch(player.server, f"Membre.php?Pseudo={player.name}")
     try:
         cell = soup.select_one(
             "#centre > center > div:nth-child(2) > div:nth-child(3) > table > tr:nth-child(2) > td:nth-child(2)"
@@ -158,20 +133,7 @@ def take_precision_snapshots() -> None:
 @app.task
 def take_page_ranking_snapshot(server_pk: int, page: int) -> Tuple[int, int, int, int]:
     server = FourmizzzServer.objects.get(pk=server_pk)
-    cookies = {"PHPSESSID": server.cookie_session}
-    url = f"http://{server.name}.fourmizzz.fr/classement2.php?page={page}&typeClassement=terrain"
-
-    try:
-        r = requests.get(url, cookies=cookies)
-    except requests.exceptions.ConnectionError:
-        send_error(
-            category=server.name,
-            thread="take_page_ranking_snapshot",
-            title=f"Could not open ranking page {page}",
-        )
-        raise
-
-    soup = BeautifulSoup(r.text, "html.parser")
+    soup = fetch(server, f"classement2.php?page={page}&typeClassement=terrain")
     table = soup.find("table", {"class": "tab_triable"})
     if table is None:  # Page does not exist
         return {"server_pk": server_pk, "page": page, "hunting_field": 0, "trophies": 0}
@@ -295,7 +257,9 @@ def update_n_scanned_pages(ranking_snapshot_results: List[List]):
     # Set hard limit to 100 pages because of hardware limitations
     new_page = max(1, min(100, new_page))
     server.n_scanned_pages = new_page
-    server.save()
+    # Only this field: a bare save() would write back a possibly stale cookie jar and undo a
+    # session refresh another worker just made.
+    server.save(update_fields=["n_scanned_pages"])
 
     return new_page
 
@@ -333,9 +297,7 @@ def process_player_precision_snapshots(
         field_name: Literal["hunting_field", "trophies"],
         timestamp: bool = True,
     ):
-        alliance_name = get_player_alliance(
-            server.name, player_name, server.cookie_session
-        )
+        alliance_name = get_player_alliance(server, player_name)
         alliance = (
             ""
             if alliance_name is None

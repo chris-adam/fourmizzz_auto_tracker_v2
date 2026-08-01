@@ -4,11 +4,31 @@ This application watches player statistics (hunting field, trophies, vacation st
 
 This guide explains how to install and run it on your own computer, **step by step, assuming no prior technical knowledge**. Expect the whole setup to take 30–60 minutes the first time.
 
+## ⚠️ Read this before you start: the tracker takes over your game account
+
+The tracker plays the part of a logged-in player, and Fourmizzz only lets an account be logged in
+**one place at a time**. So the tracker and you are competing for the same seat:
+
+- **The tracker occupies your account's session.** While it runs, you cannot simply open the game
+  in your browser and play as usual — you and the tracker would keep throwing each other out.
+- **Sharing the session (the PHPSESSID override in step 7a) is the workaround, and it is a partial
+  one.** You paste your browser's session code into the tracker so you both use the *same* session
+  instead of fighting over two. You can then keep playing — but from that **one** browser on that
+  **one** device only. Logging in anywhere else (another browser, your phone) opens a new session
+  and knocks out both you and the tracker.
+- **A second account is not a safe way around this.** It would give the tracker its own seat, but
+  running two Fourmizzz accounts is what moderators look for as multi-accounting, and it can get
+  **both** accounts banned — the tracked one included. Do not take this route on the assumption
+  that it will go unnoticed.
+
+In short: expect to choose between playing normally and running the tracker, unless you are content
+to play from a single device with the session shared.
+
 ## What you will need
 
 - A computer (Windows, Mac or Linux) that stays powered on — the tracker only works while it is running.
 - A Discord account, and a Discord server where you have the **Manage Server** permission (you can also [create a new server](https://support.discord.com/hc/en-us/articles/204849977) for free).
-- A Fourmizzz account on the game server you want to watch.
+- A Fourmizzz account on the game server you want to watch — and the understanding, from the warning above, that the tracker largely takes that account over.
 
 ## A quick word about the terminal
 
@@ -154,20 +174,35 @@ Open [http://localhost:8080/admin](http://localhost:8080/admin) in your browser 
 
 ### 7a. Add the game server
 
-The tracker reads the game through a Fourmizzz account, so you need to hand it your game session:
+The tracker reads the game through a Fourmizzz account, so you need to give it that account's login:
 
 1. In the admin, under **Scraper**, click **Fourmizzz servers**, then **Add Fourmizzz server** (top right).
 2. Fill in:
    - **Name**: the game server to watch (`s1` to `s4`) — the one your account plays on.
-   - **Username**: your Fourmizzz account name. This is just a reminder for yourself; it isn't used by the tracker.
-   - **Cookie session**: this is the tricky one. It's a code stored in your browser that proves you're logged in to the game:
-     1. Open [fourmizzz.fr](http://fourmizzz.fr) in your browser and log in to your account on the right server.
-     2. Press `F12` to open the browser's developer tools.
-     3. Go to the **Application** tab (Chrome/Edge) or **Storage** tab (Firefox), then **Cookies** → the fourmizzz address. ([Illustrated guide for Chrome](https://developer.chrome.com/docs/devtools/application/cookies/))
-     4. Find the row named `PHPSESSID` and copy its **value** (a string of random letters and numbers) into the field.
-     > If you later log out of the game in your browser, this code expires and the tracker stops working — just repeat this little procedure and update the field.
+   - **Username**: your Fourmizzz account name.
+   - **Password**: that account's password. The tracker uses it to log in to the game, and to log
+     back in on its own whenever the game expires its session — so you never have to touch this
+     again. (When editing an existing server later, leave the field empty to keep the password you
+     already saved.)
+   - **PHPSESSID override**: optional, and this is the field that decides whether you can keep
+     playing (see the warning at the top of this guide). Paste the `PHPSESSID` from your own browser
+     (`F12` → **Application**/**Storage** tab → **Cookies** → the fourmizzz address) and the tracker
+     shares that one session with you instead of opening a second one, so you can carry on playing
+     — but only from that one browser on that one device. Leave it empty and the tracker takes the
+     account's session for itself, which is fine if you do not intend to play while it runs.
    - **Number of scanned pages**: leave the default (100); the tracker adjusts it by itself.
-3. Click **Save**.
+3. Click **Save**. The tracker logs in straight away to check the password, and tells you on this
+   page if the game refused it.
+
+> **A note on your password.** It is stored as-is in the tracker's database, so use the tracker on
+> a machine you trust. It never leaves your own installation.
+
+> **If you shared your browser session**, you never have to repaste it: when the game expires the
+> session, the tracker logs back in on the *same* session code and you both carry on. The one case
+> where the sharing quietly ends is a login that times out — the game makes every request on a
+> shared session code wait for the previous one, so a login can get stuck behind the tracker's own
+> scanning. The tracker then falls back to a session of its own, and you would repaste the override
+> to pair up again.
 
 ### 7b. Add the alliance to watch
 
@@ -257,5 +292,5 @@ When a new version of the tracker is published, here is how to switch to it. **Y
 - **`docker: command not found`** → Docker isn't installed (step 1), or Docker Desktop isn't started.
 - **`no configuration file provided` or `not found`** → your terminal isn't inside the project folder; redo the `cd` from step 2.
 - **The bot stays offline in Discord** → check `DISCORD_TOKEN` in `discord.env` (no extra spaces, complete token), then restart the tracker (stop + start commands above).
-- **No notifications arrive** → the game session may have expired; update the **Cookie session** field as explained in step 7a. Also check that the bot has the permissions from step 3 on your server.
+- **No notifications arrive** → check that the bot has the permissions from step 3 on your server. The tracker renews its own game session, so an expired session is no longer a cause; if the password ever stops working, the tracker says so in the Discord `errors` thread and you can fix it in step 7a.
 - **The page `localhost:8080` doesn't load** → make sure the containers are running (`ps` command in step 5) and that you started them on this same computer.

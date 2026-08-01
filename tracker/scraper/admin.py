@@ -29,7 +29,22 @@ from scraper.web_agent import get_player_alliance
 @admin.register(FourmizzzServer)
 class FourmizzzServerAdmin(admin.ModelAdmin):
     form = FourmizzzServerForm
-    list_display = ("pk", "name", "username", "n_scanned_pages")
+    list_display = (
+        "pk",
+        "name",
+        "username",
+        "n_scanned_pages",
+        "session_cookies",
+        "last_login_attempt",
+    )
+
+    def session_cookies(self, obj):
+        """Which cookies the tracker currently holds, without revealing their values."""
+        if not obj.cookies:
+            return "none"
+        return ", ".join(sorted(obj.cookies))
+
+    session_cookies.short_description = "Session cookies"
 
 
 @admin.register(PlayerTarget)
@@ -67,9 +82,7 @@ class PlayerTargetAdmin(admin.ModelAdmin):
                 alliance=obj.alliance.name,
             )
 
-        player_alliance = get_player_alliance(
-            obj.server.name, obj.name, obj.server.cookie_session
-        )
+        player_alliance = get_player_alliance(obj.server, obj.name)
         if player_alliance:
             return format_html(
                 "<a target='_blank' rel='noopener' href='http://{server}.fourmizzz.fr/classementAlliance.php?alliance={alliance}'>{alliance}</a>",
@@ -135,9 +148,7 @@ class PrecisionSnapshotAdmin(admin.ModelAdmin):
                 alliance=obj.player.alliance.name,
             )
 
-        player_alliance = get_player_alliance(
-            obj.player.server.name, obj.player.name, obj.player.server.cookie_session
-        )
+        player_alliance = get_player_alliance(obj.player.server, obj.player.name)
         if player_alliance:
             return format_html(
                 "<a target='_blank' rel='noopener' href='http://{server}.fourmizzz.fr/classementAlliance.php?alliance={alliance}'>{alliance}</a>",

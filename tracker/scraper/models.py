@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils.html import format_html
 
 from scraper.web_agent import get_alliance_members
 
@@ -12,11 +11,23 @@ class FourmizzzServer(models.Model):
     )
     username = models.fields.CharField(
         max_length=100,
-        help_text="This is not used. This is only for you to remember what account you picked the cookie from.",
+        help_text="Your Fourmizzz account name, used to log in to the game.",
     )
-    cookie_session = models.fields.CharField(
+    password = models.fields.CharField(
         max_length=100,
-        help_text=f"""Grab the value from cookie PHPSESSID ({format_html("<a target='_blank' rel='noopener' href='https://developer.chrome.com/docs/devtools/application/cookies/'>Click here</a>")})""",
+        blank=True,
+        default="",
+        help_text="The password of that Fourmizzz account. Used to log back in when the game session expires.",
+    )
+    cookies = models.JSONField(
+        default=dict,
+        editable=False,
+        help_text="Cookie jar managed by the tracker. Do not edit by hand.",
+    )
+    last_login_attempt = models.fields.DateTimeField(
+        null=True,
+        blank=True,
+        editable=False,
     )
     n_scanned_pages = models.fields.IntegerField(
         verbose_name="Number of scanned pages", default=100
@@ -36,9 +47,7 @@ class AllianceTarget(models.Model):
     def save(self, *args, **kwargs):
         super(AllianceTarget, self).save(*args, **kwargs)
 
-        player_names = get_alliance_members(
-            self.server.name, self.name, self.server.cookie_session
-        )
+        player_names = get_alliance_members(self.server, self.name)
 
         player_targets = []
         for player_name in player_names:

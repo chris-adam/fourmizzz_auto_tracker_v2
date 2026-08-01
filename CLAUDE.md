@@ -44,7 +44,7 @@ docker compose -f docker-compose.prod.yml -p fourmizzz_auto_tracker_v2 up -d --b
 |-----------|----------|------|
 | Django app | `tracker/scraper/` | Models, views, admin, forms |
 | Celery tasks | `tracker/scraper/tasks.py` | All business logic / scheduling |
-| Web scraper | `tracker/scraper/web_agent.py` | HTTP scraping of fourmizzz.fr |
+| Web scraper | `tracker/scraper/web_agent.py` | HTTP scraping of fourmizzz.fr, plus session/login handling |
 | Celery config | `tracker/tracker/celery.py` | Beat schedule, broker config |
 | Discord bot | `discord/main.py` | aiohttp server (port 5000), posts notifications |
 | Nginx | `docker/nginx/` | Reverse proxy, serves static files on port 8080 |
@@ -70,7 +70,7 @@ docker compose -f docker-compose.prod.yml -p fourmizzz_auto_tracker_v2 up -d --b
 
 ### Key Models (`tracker/scraper/models.py`)
 
-- `FourmizzzServer` — server name (s1–s4), session cookie (`PHPSESSID`), `n_scanned_pages`
+- `FourmizzzServer` — server name (s1–s4), game credentials (`username`/`password`), `cookies` (tracker-managed jar), `last_login_attempt`, `n_scanned_pages`
 - `AllianceTarget` — alliance to monitor, linked to server
 - `PlayerTarget` — player to track, linked to server + alliance, includes `mv` (vacation) flag
 - `PrecisionSnapshot` — point-in-time player stats with diffs; `processed` flag used by process task
@@ -86,6 +86,22 @@ docker compose -f docker-compose.prod.yml -p fourmizzz_auto_tracker_v2 up -d --b
 ## Notes
 
 - **No tests** — `scraper/tests.py` is empty; testing is manual via Django admin
+- **All game requests must go through `web_agent.fetch()`.** It is the single place that detects an
+  expired session and logs back in. A bare `requests.get` bypasses that and resurrects the original
+  bug (the expired-session page reaching BeautifulSoup as an `AttributeError`).
+- Session renewal is coordinated with a Postgres row lock plus a compare-and-swap on
+  `last_login_attempt`, so one expiry causes one login rather than one per running task. The CAS
+  cannot key on the cookie: the game runs PHP 5.3, which accepts a client-supplied `PHPSESSID`, so a
+  successful re-login usually returns the *same* session id (deliberately — it keeps the tracker's
+  session shared with the browser session it was seeded from).
+- When saving a `FourmizzzServer` outside `web_agent`, always pass `update_fields`; a bare `save()`
+  can write back a stale cookie jar and undo another worker's refresh.
+- PHP serialises every request sharing a `PHPSESSID` on the session file lock, so the tracker's own
+  traffic (a ranking sweep is ~100 requests/minute, the MV check every 3s) queues against itself.
+  That is why a login reusing the current session id can time out; `_login` falls back to a
+  cookie-less login, which starts an uncontended session at the cost of no longer sharing with the
+  browser. Keep `LOGIN_TIMEOUT` x 2 comfortably under `CELERY_TASK_TIME_LIMIT`: both attempts run
+  while the row lock is held.
 - Celery broker: RabbitMQ via AMQP; result backend: `django-db`
 - Timezone: `Europe/Brussels`; task time limit: 30 seconds
 - Snapshot retention: 3 days (cleaned by `clean-old-snapshots`)
